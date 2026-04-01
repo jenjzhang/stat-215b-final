@@ -1,0 +1,25 @@
+# Data — never commit raw API responses or large datasets
+data/raw/
+data/processed/
+
+# Secrets
+.env
+*.env
+
+# Python
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+*.egg-info/
+dist/
+build/
+.venv/
+env/
+
+# R
+.Rhistory
+.RData
+*.Rout
+
+# OS
+.DS_Store

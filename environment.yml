@@ -1,0 +1,22 @@
+name: 215b-final
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.11
+  - pip
+  - numpy
+  - pandas
+  - scipy
+  - scikit-learn       # isotonic regression
+  - statsmodels        # mixed effects models
+  - matplotlib
+  - seaborn
+  - jupyterlab
+  - tqdm
+  - pip:
+    - openai           # GPT-4o-mini API
+    - datasets         # HuggingFace MMLU
+    - transformers     # Llama-3-8B logprobs
+    - python-dotenv    # load .env for API keys
+    - pingouin         # ICC computation
