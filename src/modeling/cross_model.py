@@ -24,10 +24,10 @@ RNG = np.random.default_rng(42)
 
 def bootstrap_spearman(x: np.ndarray, y: np.ndarray, n: int = N_BOOTSTRAP):
     observed, _ = stats.spearmanr(x, y)
-    boot = np.array([
-        stats.spearmanr(x[idx := RNG.integers(0, len(x), len(x))], y[idx])[0]
-        for _ in range(n)
-    ])
+    def _one_boot():
+        idx = RNG.integers(0, len(x), len(x))
+        return stats.spearmanr(x[idx], y[idx])[0]
+    boot = np.array([_one_boot() for _ in range(n)])
     ci_lo, ci_hi = np.percentile(boot, [2.5, 97.5])
     return observed, ci_lo, ci_hi
 

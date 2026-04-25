@@ -30,31 +30,23 @@ def fit_model(df: pd.DataFrame):
     for col in ["word_count", "max_choice_len", "entropy"]:
         df[col] = (df[col] - df[col].mean()) / df[col].std()
 
-    formula = f"{OUTCOME} ~ {' + '.join(COVARIATES)} + (1 | domain) + (1 | subject)"
-    model = smf.mixedlm(
-        formula=f"{OUTCOME} ~ {' + '.join(COVARIATES)}",
-        data=df,
-        groups=df["subject"],
-        exog_re=np.ones(len(df)),
-    )
-    # Note: statsmodels MixedLM supports two-level nesting natively.
-    # For the full three-level (question/subject/domain) model, use the
-    # formula interface with variance components:
-    vc = {"domain": "0 + C(domain)"}
+    # Three-level nested model: question within subject within domain.
+    # groups=domain (outermost), vc_formula=subject (middle level).
     result = smf.mixedlm(
         f"{OUTCOME} ~ {' + '.join(COVARIATES)}",
         data=df,
-        groups=df["subject"],
-        vc_formula=vc,
+        groups=df["domain"],
+        vc_formula={"subject": "0 + C(subject)"},
     ).fit(reml=True)
     return result
 
 
 def icc_decomposition(result) -> dict:
-    var_subject = result.cov_re.iloc[0, 0]
-    var_domain = result.vcomp[0] if hasattr(result, "vcomp") else np.nan
+    cov_re = result.cov_re
+    var_domain = float(cov_re.iloc[0, 0]) if cov_re.shape[1] > 0 else 0.0
+    var_subject = float(result.vcomp[0]) if hasattr(result, "vcomp") and len(result.vcomp) > 0 else 0.0
     var_residual = result.scale
-    total = var_subject + var_domain + var_residual
+    total = var_domain + var_subject + var_residual
     return {
         "icc_domain": var_domain / total,
         "icc_subject": var_subject / total,
@@ -66,15 +58,31 @@ def icc_decomposition(result) -> dict:
 
 
 def extract_blups(result, df: pd.DataFrame) -> pd.DataFrame:
-    re = result.random_effects
-    blups = pd.DataFrame([
-        {"subject": subj, "blup": vals.iloc[0]}
-        for subj, vals in re.items()
-    ])
-    subject_meta = df.groupby("subject")[["domain", "n"]].first().reset_index() if "n" in df else (
-        df.groupby("subject")["domain"].first().reset_index()
-    )
-    return blups.merge(subject_meta, on="subject")
+    # Empirical Bayes shrinkage: BLUP_j = lambda_j * (y_bar_j - mu_hat_j)
+    # where lambda_j = var_subject / (var_subject + var_residual / n_j)
+    icc = icc_decomposition(result)
+    var_subject = icc["var_subject"]
+    var_residual = icc["var_residual"]
+
+    fe = result.fe_params
+    covariates_in_model = [c for c in COVARIATES if c in df.columns]
+    df = df.copy()
+    for col in ["word_count", "max_choice_len", "entropy"]:
+        if col in df.columns:
+            df[col] = (df[col] - df[col].mean()) / df[col].std()
+    df["mu_hat"] = fe["Intercept"] + sum(fe.get(c, 0) * df[c] for c in covariates_in_model)
+
+    rows = []
+    for subj, grp in df.groupby("subject"):
+        n_j = len(grp)
+        residual_mean = (grp["calibration_gap"] - grp["mu_hat"]).mean()
+        shrinkage = var_subject / (var_subject + var_residual / n_j) if (var_subject + var_residual / n_j) > 0 else 0
+        rows.append({
+            "subject": subj,
+            "blup": shrinkage * residual_mean,
+            "domain": grp["domain"].iloc[0],
+        })
+    return pd.DataFrame(rows)
 
 
 def run(model: str):

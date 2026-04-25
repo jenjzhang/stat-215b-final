@@ -19,7 +19,7 @@ curves:
 
 # Step 4: Multilevel model, EB shrinkage, multiple testing
 model:
-	python src/modeling/run_analysis.py
+	PYTHONPATH=. python src/modeling/run_analysis.py
 
 # Step 5: Cross-model comparison
 compare:
