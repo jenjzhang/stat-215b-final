@@ -50,6 +50,12 @@ def compute_ece(confidence: np.ndarray, correct: np.ndarray, n_bins: int = 20) -
     return ece
 
 
+def compute_nlcs(confidence: np.ndarray, correct: np.ndarray) -> float:
+    eps = 1e-12
+    conf = np.clip(confidence, eps, 1 - eps)
+    return float(-np.mean(correct * np.log(conf) + (1 - correct) * np.log(1 - conf)))
+
+
 def bh_correct(p_values: np.ndarray, alpha: float = 0.05) -> np.ndarray:
     n = len(p_values)
     order = np.argsort(p_values)
@@ -77,6 +83,7 @@ def subject_stats(df: pd.DataFrame) -> pd.DataFrame:
             "domain": grp["domain"].iloc[0],
             "n": len(grp),
             "ece": compute_ece(conf, corr),
+            "nlcs": compute_nlcs(conf, corr),
             "mean_gap": gaps.mean(),
             "p_value": p_val,
         })
@@ -105,9 +112,16 @@ def main():
     rho, lo, hi = bootstrap_spearman(ece_g, ece_l)
     print(f"Spearman rank correlation (ECE): rho={rho:.3f}, 95% CI [{lo:.3f}, {hi:.3f}]")
 
+    nlcs_g = summaries["gpt4o"].loc[common, "nlcs"].values
+    nlcs_l = summaries["llama"].loc[common, "nlcs"].values
+    rho_nlcs, lo_nlcs, hi_nlcs = bootstrap_spearman(nlcs_g, nlcs_l)
+    print(f"Spearman rank correlation (NLCS): rho={rho_nlcs:.3f}, 95% CI [{lo_nlcs:.3f}, {hi_nlcs:.3f}]")
+
     df = pd.DataFrame(index=common)
     df["ece_gpt4o"] = summaries["gpt4o"].loc[common, "ece"]
     df["ece_llama"] = summaries["llama"].loc[common, "ece"]
+    df["nlcs_gpt4o"] = summaries["gpt4o"].loc[common, "nlcs"]
+    df["nlcs_llama"] = summaries["llama"].loc[common, "nlcs"]
     df["reject_gpt4o"] = summaries["gpt4o"].loc[common, "reject"]
     df["reject_llama"] = summaries["llama"].loc[common, "reject"]
     df["domain"] = summaries["gpt4o"].loc[common, "domain"]

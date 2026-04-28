@@ -61,6 +61,12 @@ def compute_ece(confidence: np.ndarray, correct: np.ndarray, n_bins: int = N_BIN
     return ece
 
 
+def compute_nlcs(confidence: np.ndarray, correct: np.ndarray) -> float:
+    eps = 1e-12
+    conf = np.clip(confidence, eps, 1 - eps)
+    return float(-np.mean(correct * np.log(conf) + (1 - correct) * np.log(1 - conf)))
+
+
 def process_model(model: str):
     df = pd.read_parquet(IN / f"questions_{model}.parquet")
     subjects = df["subject"].unique()
@@ -81,6 +87,7 @@ def process_model(model: str):
 
         _, kernel_acc = kernel_smoother(conf, corr)
         ece = compute_ece(conf, corr)
+        nlcs = compute_nlcs(conf, corr)
 
         curve_rows.append({
             "subject": subj,
@@ -89,6 +96,7 @@ def process_model(model: str):
             "isotonic_acc": isotonic_acc.tolist(),
             "kernel_acc": kernel_acc.tolist(),
             "ece": ece,
+            "nlcs": nlcs,
         })
 
         summary_rows.append({
@@ -96,6 +104,7 @@ def process_model(model: str):
             "domain": domain,
             "n": len(sub),
             "ece": ece,
+            "nlcs": nlcs,
             "mean_gap": sub["calibration_gap"].mean(),
             "mean_confidence": conf.mean(),
             "mean_accuracy": corr.mean(),
