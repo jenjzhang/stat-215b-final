@@ -1,6 +1,6 @@
 # A Statistical Audit of LLM Calibration Heterogeneity Across Knowledge Domains
 
-STAT 215B Final Project — Jennifer Zhang & John Wright
+STAT 215B Final Project
 
 ## Overview
 
@@ -11,9 +11,9 @@ We develop a statistically rigorous framework to detect and characterize domain-
 ```
 final/
 ├── src/
-│   ├── collect/        # John: MMLU download, API querying, feature extraction
-│   ├── calibration/    # John: isotonic + kernel calibration curves
-│   └── modeling/       # Jennifer: multilevel model, EB shrinkage, BH testing
+│   ├── collect/        # MMLU download, API querying, feature extraction
+│   ├── calibration/    # Isotonic + kernel calibration curves
+│   └── modeling/       # Multilevel model, EB shrinkage, BH testing
 ├── notebooks/          # Exploratory and final analysis
 ├── data/               # gitignored — see Setup
 └── report/figures/     # Generated plots (gitignored)
@@ -57,19 +57,6 @@ python src/modeling/cross_model.py
 ```
 
 Or run all at once: `make all`
-
-## Division of Labor
-
-| Component | Lead |
-|---|---|
-| MMLU download + feature extraction | John |
-| GPT-4o-mini + Llama API querying | John |
-| Isotonic + kernel calibration curves | John |
-| Three-level mixed effects model | Jennifer |
-| Empirical Bayes shrinkage (BLUPs) | Jennifer |
-| BH multiple testing correction | Jennifer |
-| Cross-model comparison | Both |
-| Writing | Both |
 
 ## Research Questions
 

@@ -41,7 +41,9 @@ def add_features(mmlu: pd.DataFrame, responses: pd.DataFrame) -> pd.DataFrame:
         lambda q: int(bool(NEGATION_RE.search(q)))
     )
 
-    # Probability features
+    # Confidence = P(predicted answer | {A,B,C,D}), renormalized over the four choices.
+    # Both models use top_logprobs=20 (GPT) or full-vocab logits (Llama-Instruct), so
+    # all four answer tokens are reliably captured and the renormalization is accurate.
     logprobs = df[LOGPROB_COLS].values
     probs = softmax(logprobs, axis=1)
     df["confidence"] = probs.max(axis=1)
@@ -56,7 +58,7 @@ def add_features(mmlu: pd.DataFrame, responses: pd.DataFrame) -> pd.DataFrame:
 def main():
     mmlu = pd.read_parquet(RAW / "mmlu.parquet")
 
-    for model, fname in [("gpt4o", "gpt4o_responses.parquet"), ("llama", "llama_responses.parquet")]:
+    for model, fname in [("gpt4o", "gpt4o_responses_top20.parquet"), ("llama", "llama_instruct_responses.parquet copy")]:
         resp_path = RAW / fname
         if not resp_path.exists():
             print(f"Skipping {model}: {resp_path} not found")

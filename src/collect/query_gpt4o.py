@@ -18,7 +18,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 IN = Path("data/raw/mmlu.parquet")
-OUT = Path("data/raw/gpt4o_responses.parquet")
+OUT = Path("data/raw/gpt4o_responses_top20.parquet")
 ANSWER_TOKENS = ["A", "B", "C", "D"]
 
 PROMPT_TEMPLATE = """\
@@ -51,7 +51,7 @@ def query_one(client: OpenAI, prompt: str) -> dict:
                 messages=[{"role": "user", "content": prompt}],
                 max_tokens=1,
                 logprobs=True,
-                top_logprobs=5,
+                top_logprobs=20,
                 temperature=0,
             )
             top = {t.token: t.logprob for t in resp.choices[0].logprobs.content[0].top_logprobs}

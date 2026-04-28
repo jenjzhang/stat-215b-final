@@ -75,6 +75,7 @@ def main():
 
     token_ids = get_answer_token_ids(tokenizer)
     BATCH_SIZE = 8
+    SAVE_EVERY = 100  # save checkpoint every 100 questions
     results = []
 
     for i in tqdm(range(0, len(df), BATCH_SIZE)):
@@ -87,11 +88,20 @@ def main():
             res["correct"] = res["predicted"] == ANSWER_TOKENS[row["answer"]]
             results.append(res)
 
-    out_df = pd.DataFrame(results)
-    if OUT.exists():
-        out_df = pd.concat([pd.read_parquet(OUT), out_df], ignore_index=True)
-    out_df.to_parquet(OUT, index=False)
-    print(f"Saved {len(out_df):,} responses to {OUT}")
+        if len(results) >= SAVE_EVERY:
+            out_df = pd.DataFrame(results)
+            if OUT.exists():
+                out_df = pd.concat([pd.read_parquet(OUT), out_df], ignore_index=True)
+            out_df.to_parquet(OUT, index=False)
+            results = []
+
+    if results:
+        out_df = pd.DataFrame(results)
+        if OUT.exists():
+            out_df = pd.concat([pd.read_parquet(OUT), out_df], ignore_index=True)
+        out_df.to_parquet(OUT, index=False)
+
+    print(f"Saved {len(pd.read_parquet(OUT)):,} responses to {OUT}")
 
 
 if __name__ == "__main__":
