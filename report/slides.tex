@@ -147,6 +147,71 @@ Positive = overconfident; negative = underconfident.
   because with 5 logprobs, 55\% of questions had at least one answer token missing,
   which would artificially inflate confidence estimates. That's a real data quality
   issue that took some debugging.
+
+  \textbf{[If asked: what exactly is the signed calibration gap?]}
+  The gap is computed at the \emph{question level}: for each of the 14,042 questions,
+  we take the model's renormalized confidence $c_i \in (0,1]$ (the max softmax
+  probability over A/B/C/D) and subtract the binary correctness indicator $y_i \in \{0,1\}$.
+  So $\mathrm{gap}_i = c_i - y_i$ is a number in $(-1, 1)$ for every individual question.
+  It is positive when the model was more confident than it deserved (overconfident)
+  and negative when it was less confident than it deserved (underconfident).
+
+  From that question-level quantity we derive everything else:
+  \begin{itemize}
+    \item \textbf{Multilevel regression}: all 14,042 gap values are the outcome.
+      The intercept (0.196) is the grand mean; the fixed effects (word count, entropy)
+      are slopes; the random effects partition variance across subjects and domains.
+    \item \textbf{Subject mean gap} (bar chart, Finding 3): simple average of
+      $\mathrm{gap}_i$ across all questions in a subject. A subject with mean gap
+      $= 0.487$ (moral scenarios) means that on average the model was 49 percentage
+      points more confident than it was accurate.
+    \item \textbf{BH testing}: for each subject, a one-sample $t$-test on the
+      question-level gaps tests whether the mean gap is significantly different
+      from zero.
+  \end{itemize}
+  We do \emph{not} bin the gap — ECE does the binning. The gap is a raw question-level
+  residual; ECE is a post-hoc aggregation that throws away sign and is sensitive to
+  bin count. That is precisely why we use gap for regression and ECE only for ranking.
+
+  \textbf{[If asked: signed gap vs.\ ECE]}
+  We use both, but for different purposes. The signed gap is our question-level outcome
+  for the multilevel regression — it preserves direction and supports standard inference.
+  ECE is a subject-level scalar used for calibration curves and cross-model rankings;
+  it cannot be used as a regression outcome because it is already aggregated.
+  When miscalibration is uniformly in one direction (as it is here), the mean signed
+  gap and ECE are closely related: ECE $\approx$ $|$mean gap$|$ plus a within-subject
+  variation term. Both tell the same story; they serve different analytical roles.
+
+  \textbf{[If asked: why only uppercase A, B, C, D?]}
+  For GPT-4o-mini, the prompt explicitly instructs ``Answer with a single letter:
+  A, B, C, or D'' and ends with ``Answer:'' — instruction-tuned models follow this
+  reliably. With top\_logprobs=20, any token in the top 20 is captured; if a lowercase
+  letter appeared and the uppercase did not, the uppercase would receive a default of
+  $-100$ (essentially zero probability). In practice this is rare given the explicit
+  prompt constraint.
+  For Llama, we extract logits over the \emph{full vocabulary} at the generation
+  position and directly index the token IDs for ``\textvisiblespace A'',
+  ``\textvisiblespace B'', ``\textvisiblespace C'', ``\textvisiblespace D''
+  (space-prefixed, as they appear naturally after ``The answer is'').
+  This is a direct lookup, not a search — we get the exact softmax probability at
+  those positions regardless of what other tokens were likely.
+  Lowercase letters have different token IDs and are not summed in; they are simply
+  excluded from the renormalization. This is standard in the MMLU logprob literature
+  \citep{kadavath2022language} and is unlikely to bias results since the prefix
+  strongly primes uppercase completions.
+
+  \textbf{[If asked: why is 4-bit quantization acceptable?]}
+  Running Llama-3-8B-Instruct in full precision (bfloat16) requires $\sim$16\,GB of
+  GPU memory, which exceeds a Colab T4 (15\,GB). 4-bit NF4 quantization via
+  BitsAndBytes reduces this to $\sim$5\,GB with minimal accuracy loss — the QLoRA
+  paper (Dettmers et al.\ 2023) reports $<$1--2\% accuracy degradation across
+  standard benchmarks. Our observed accuracy of 60.6\% vs.\ the reported $\sim$64\%
+  for full-precision Llama-3-8B-Instruct is consistent with this range.
+  Crucially, for calibration heterogeneity research, the \emph{relative} pattern
+  across subjects matters more than absolute accuracy. The strongest evidence that
+  quantization did not distort our findings is the cross-model Spearman $\rho = 0.846$:
+  a heavily degraded model would not replicate GPT-4o-mini's subject-level rankings
+  this faithfully.
 }
 
 % ============================================================
@@ -202,6 +267,32 @@ Positive = overconfident; negative = underconfident.
   Mention REML: ``We use restricted maximum likelihood, which gives unbiased variance
   component estimates — important here since the variance decomposition is our main
   inferential target.''
+
+  \textbf{[If asked: why fixed effects for questions and random effects for subject/domain?]}
+  The core justification is about whether you have a theory worth committing to.
+
+  At the \textbf{question level}, you have interpretable, measurable features and a
+  plausible theory: longer questions are harder to reason about; higher entropy means
+  the model is more uncertain; negations are known to trip up models. You can name
+  the features, measure them, and interpret the coefficients. Fixed effects are the
+  right tool when you have a theory.
+
+  At the \textbf{subject and domain level}, you don't have a good theory of
+  \emph{which} subject-level features drive miscalibration --- is it abstractness?
+  normativity? rarity in pretraining data? Because you can't specify those features,
+  you rely on mere group membership: ``I know subjects differ systematically, I'll
+  let the data estimate how much, without committing to why.'' That is exactly what
+  random effects do --- they capture the variance across groups without requiring you
+  to name a mechanism.
+
+  There is also a practical reason: fitting 57 subject fixed effects would burn
+  degrees of freedom and overfit, especially for small subjects (some have only 100
+  questions). Random effects pool information across subjects via the ICC, which is
+  more efficient.
+
+  One caveat: the domain random effect is barely identified with only 4 groups, which
+  is exactly why it collapses to zero. Be upfront about this if asked --- it is a
+  structural limitation of MMLU's 4-domain design, not a modeling failure.
 }
 
 % ------------------------------------------------------------
@@ -249,42 +340,112 @@ Positive = overconfident; negative = underconfident.
   Llama's miscalibration is more diffuse — spread more evenly across subjects rather
   than concentrated in particular domains.''
 
+  \textbf{[Important: what ICC does and does not say]}
+  ICC = 7.9\% does NOT mean calibration barely varies across subjects.
+  It means 7.9\% of total question-level variance is attributable to subject membership.
+  That 7.9\% is still large enough to produce a 13$\times$ range in mean subject gaps
+  (0.037 to 0.487) --- the two facts are compatible.
+  Most question-to-question variability is noise regardless of subject (the 92\%),
+  but the systematic component that does exist is substantively meaningful.
+
   Be upfront about domain ICC = 0: ``Domain-level variance is estimated at zero.
   That doesn't mean domains don't matter descriptively — we see clear differences in
   the bar chart. But the model can't separate domain-level variance from subject-level
   variance because the subject random effects absorb whatever between-domain structure
   exists. With only 4 domain groups we also have very low power to detect a non-zero
   domain component even if one were present.''
+
+  \textbf{[If asked: how do we get the variance components and ICC?]}
+  Fitting the mixed model via REML directly outputs the variance components
+  $\sigma^2_\text{domain}$, $\sigma^2_\text{subject}$, and $\sigma^2_\text{residual}$
+  as part of the optimization — no separate step needed. REML is preferred over
+  standard MLE because MLE tends to underestimate variance components (it doesn't
+  account for the degrees of freedom consumed by the fixed effects); REML corrects
+  for this and gives unbiased estimates.
+
+  The ICC is then just arithmetic: divide each variance component by the total.
+  For GPT-4o-mini: total variance $= 0.000 + 0.013 + 0.150 = 0.163$, so
+  $\text{ICC}_\text{subject} = 0.013 / 0.163 = 7.9\%$.
+  The ICC answers: of all the variance in the calibration gap, what fraction is
+  explained by knowing which subject a question comes from?
+  7.9\% means subject identity accounts for a meaningful but modest share ---
+  some subjects are persistently harder to calibrate on, but most of the
+  variation is question-level noise that subject alone can't predict.
 }
 
 % ------------------------------------------------------------
 
-\begin{frame}{Finding 2: calibration curves reveal systematic overconfidence}
+\begin{frame}{Finding 2: all 57 subjects are overconfident on average}
   \begin{center}
     \includegraphics[width=0.85\textwidth]{figures/top5_miscalibrated_gpt4o.pdf}
   \end{center}
   \vspace{-0.5em}
-  {\small Reliability curves (isotonic = solid, kernel = dashed) for the 5 most
-  miscalibrated subjects. All five lie \emph{below} the diagonal — stated confidence
-  exceeds empirical accuracy throughout.}
+  {\small The 5 most miscalibrated subjects shown. All 57 subjects have positive mean
+  calibration gap. In the high-confidence region where data is concentrated, curves
+  lie below the diagonal throughout. Isotonic (solid) and kernel-smoothed (dashed)
+  curves agree where support exists; divergence at low confidence reflects empty bins.}
 \end{frame}
 \note{
   \textbf{[~30 sec]}
 
-  Point to the diagonal: ``A perfectly calibrated model sits on this line.
-  Every one of these subjects is below it — the model is consistently more confident
-  than it is accurate.''
+  Lead with the universal claim carefully: ``All 57 subjects have a positive mean
+  calibration gap — they are overconfident on average. These 5 curves show what
+  that looks like in the region where data is actually concentrated, which for most
+  subjects is the high-confidence end.''
 
-  Point out the isotonic vs. kernel agreement: ``The solid and dashed lines track
-  each other closely, which validates that the monotonicity assumption in isotonic
-  regression isn't distorting the picture.''
+  Be precise: the below-diagonal pattern holds in the region of support (roughly
+  0.85--1.0 for most subjects). It is NOT correct to say every point on every curve
+  is below the diagonal — 23/57 subjects have parts of their isotonic curve above
+  the diagonal, but this is at low-confidence bins where there are essentially no
+  data points. The mean gap being positive is the correct universal claim.
 
-  Name the subjects briefly if time allows: ``Moral scenarios, formal logic,
-  abstract algebra, professional law — these are subjects requiring abstract or
-  normative reasoning, not factual recall. The model's RLHF training likely skews
-  toward more applied content.''
+  On the formal\_logic kernel curve specifically: the dashed curve reads near 1.0
+  from confidence 0.03 to 0.53. This is a smoothing artifact — formal\_logic has
+  zero questions in those bins (126 total questions, 89 of which are in the
+  0.95--1.00 bin). The kernel is smoothing over empty space and should not be
+  interpreted there. The isotonic curve is more honest: it just holds the last
+  observed value flat across empty bins.
 
-  Keep this slide fast — the next one has the more striking quantitative result.
+  Point out isotonic vs.\ kernel agreement where it matters: ``In the region where
+  data exists — above 0.7 or so — the solid and dashed lines track each other,
+  which validates the monotonicity assumption in that range.''
+
+  Transition to Finding 3: ``The next slide shows the full picture across all 57 —
+  the key result is not just that they are all overconfident on average, but that
+  the magnitude varies 13-fold.''
+
+  \textbf{[If asked: what does `5 most miscalibrated' mean — ECE or signed gap?]}
+  These are the 5 subjects with the highest ECE, computed per subject as the weighted
+  mean absolute deviation between the reliability curve and the diagonal across 20 bins.
+  ECE is always positive — it measures magnitude but not direction.
+  Since all 57 subjects have positive mean gap (universally overconfident), the top 5
+  by ECE and top 5 by mean gap are essentially the same ranking here. But they are
+  conceptually different: if some subjects were underconfident, ECE would still flag
+  them as miscalibrated while the signed gap would show negative values.
+
+  \textbf{[If asked: what does below vs.\ above the diagonal mean?]}
+  Below the diagonal = overconfident: the model says 0.9 but is right only 0.5 of
+  the time. Users trust it more than they should.
+  Above the diagonal = underconfident: the model says 0.6 but is right 0.8 of the
+  time. It hedges more than necessary.
+  We find universal overconfidence — all curves below the diagonal — which is
+  consistent with RLHF fine-tuning pushing probability mass toward the chosen answer
+  to produce confident, helpful-sounding responses. Base models typically show
+  better calibration \citep{kadavath2022language, nakkiran2025trained}.
+  Overconfidence is the worse deployment failure: an underconfident model prompts
+  users to verify; an overconfident model in legal or medical settings actively
+  misleads users who treat confidence as a reliability signal.
+
+  \textbf{[Limitation: support is concentrated at high confidence]}
+  The confidence distribution is extremely right-skewed — the median confidence
+  across all questions is 1.000 and 90\% of questions have confidence above 0.85.
+  This is subject-dependent: math subjects (e.g., high school mathematics, abstract
+  algebra) show real spread down to 0.25, so their curves are informative across a
+  wider range. But for most subjects — including virology and formal logic in this
+  plot — confidence is concentrated near 1.0, meaning the left portion of the
+  reliability curve has essentially no data behind it and should not be interpreted.
+  The curves characterize high-confidence behavior well but tell us little about
+  how the model behaves when it expresses uncertainty, because it almost never does.
 }
 
 % ------------------------------------------------------------
@@ -318,21 +479,38 @@ Positive = overconfident; negative = underconfident.
 \note{
   \textbf{[~45 sec]}
 
-  Preempt the obvious question: ``You might wonder if 57/57 is a meaningful result
-  or just an artifact of large sample sizes. It's largely the latter in terms of the
-  binary reject/fail-to-reject — with 14,000 questions, you'll detect almost anything.
-  But that's not the interesting finding. The interesting finding is the 13-fold range
-  in magnitude.''
+  Preempt the obvious question: ``57/57 rejected sounds impressive, but it's largely
+  a consequence of large sample size and strong global overconfidence — not a deep
+  finding. The interesting result is the 13-fold range in magnitude.''
 
-  ``A gap of 0.487 on moral scenarios means the model is, on average, nearly 50
-  percentage points more confident than it is accurate. A gap of 0.037 on marketing
-  means it's essentially well-calibrated. Those are qualitatively different situations
-  that a single aggregate ECE number cannot distinguish.''
+  \textbf{What is the 13$\times$?} Simply the ratio of the largest to smallest mean gap:
+  moral scenarios (0.487) divided by marketing (0.037) $\approx 13\times$.
+  The model is 13 times more overconfident on moral scenarios than on marketing.
+  That heterogeneity is invisible in any single aggregate ECE number.
 
-  If asked why 57/57: the intercept of 0.196 is large relative to per-subject
-  standard errors (~0.025), giving t-statistics around 8 for the average subject.
-  BH adjusts for 57 tests but p-values are still near zero. The sensitivity analysis
-  slide will confirm this isn't sensitive to the alpha choice.
+  ``A gap of 0.487 means the model is, on average, nearly 50 percentage points more
+  confident than it is accurate. A gap of 0.037 means it is essentially well-calibrated.
+  Those are qualitatively different deployment situations.''
+
+  \textbf{[If asked: why is 57/57 not a meaningful finding?]}
+  Intuition: imagine testing whether a coin is slightly biased. With 10 flips you
+  might not detect it. With 1{,}000{,}000 flips you would detect even a 50.001\%
+  bias as ``statistically significant'' — but that doesn't mean it matters.
+  Same here: with 14{,}042 questions and a model already globally overconfident by
+  0.196 on average, you have enough power to flag even a trivially small true effect.
+  Even marketing (gap $= 0.037$, the best subject) gets rejected because the sample
+  is large enough to detect anything nonzero.
+
+  \textbf{Where does BH fit in?} BH controls the false discovery rate — it adjusts
+  the rejection threshold to limit false positives across 57 simultaneous tests.
+  But the problem here is not false positives; it's that all 57 true effects are
+  real but some are scientifically trivial. BH can prevent you from rejecting nulls
+  that aren't true; it cannot prevent you from correctly rejecting nulls that aren't
+  interesting. When all 57 p-values are essentially zero, BH has nothing to correct.
+
+  The analogy: testing whether 57 cities are warmer than absolute zero. Technically
+  all 57 reject, BH agrees. But the interesting question is which cities are warm
+  enough to matter. That's what the magnitude range answers.
 }
 
 % ------------------------------------------------------------
@@ -377,9 +555,40 @@ Positive = overconfident; negative = underconfident.
   consistent with Llama having less between-subject structure overall — there's
   simply less systematic variance to explain.''
 
-  If asked about why the coefficients differ: Llama's lower ICC means the
-  between-subject random effects absorb less variance, leaving more residual
-  noise that dilutes the fixed effect estimates.
+  \textbf{[If asked: why do GPT and Llama differ in fixed effect significance?]}
+  GPT's ICC is 7.9\% --- its miscalibration is organized by subject, concentrating
+  in subjects like abstract algebra and moral scenarios. These subjects also tend to
+  have longer, more ambiguous questions. So word count and entropy are picking up
+  real signal because they correlate with the hard subjects.
+  Llama's ICC is only 2.0\% --- its miscalibration is more diffuse, not concentrated
+  in particular subjects. There is no such structure for question features to exploit.
+  On top of that, Llama's residual variance is larger in absolute terms
+  ($\sigma^2_\varepsilon = 0.190$ vs.\ $0.150$ for GPT), so the same fixed effects
+  face more noise, inflating standard errors and making significance harder to reach.
+
+  \textbf{[If pushed on the fixed effects interpretation --- important limitation]}
+  The question-level predictors (word count, entropy) are standardized across the
+  full dataset, not within subjects. This means the fixed effect estimates blend two
+  things that should ideally be separated:
+  \begin{itemize}
+    \item \textbf{Within-subject effect}: within abstract algebra, do longer questions
+      get larger gaps?
+    \item \textbf{Between-subject effect}: do subjects whose questions tend to be
+      longer (like abstract algebra) also tend to have larger gaps?
+  \end{itemize}
+  Subject random intercepts absorb the between-subject \emph{baseline} in the gap,
+  but they do not remove the between-subject covariation between the predictors and
+  the gap. The clean fix is \textbf{group-mean centering}: subtract each subject's
+  mean word count from each question's word count before fitting. That isolates the
+  pure within-subject effect. Without it, the fixed effects are dataset-level
+  associations, not clean question-level effects.
+
+  The honest answer if pressed: ``The fixed effects should be interpreted as
+  associations between question features and the calibration gap, not as cleanly
+  isolated question-level effects. This is a real limitation of RQ2. The primary
+  findings --- ICC decomposition, the 13$\times$ magnitude range, and the
+  cross-model $\rho = 0.846$ --- do not depend on the fixed effects at all and
+  are unaffected by this.''
 }
 
 % ============================================================
@@ -410,6 +619,43 @@ Positive = overconfident; negative = underconfident.
 \note{
   \textbf{[~45 sec]}
 
+  \textbf{[Big picture: how this slide connects to earlier findings]}
+  Three separate claims have been made so far --- it is easy to conflate them:
+  \begin{enumerate}
+    \item \textbf{Universal overconfidence} (global intercept $= 0.196$): all 57
+      subjects are overconfident because the model itself is globally biased by RLHF.
+      The 57/57 BH rejection is mostly detecting this global effect, not between-subject
+      differences.
+    \item \textbf{Between-subject heterogeneity in magnitude} (ICC $= 7.9\%$, 13$\times$
+      range): on top of the global bias, subjects vary in how badly miscalibrated they
+      are. 7.9\% of total variance is between-subject --- modest, but enough to produce
+      a 13$\times$ range in mean gaps that matters practically.
+    \item \textbf{Task-driven miscalibration} (this slide, $\rho = 0.846$): whatever
+      between-subject variation exists is consistent across two very different models.
+      This answers a different question than ICC --- not ``how much variation is there?''
+      but ``where does that variation come from?''
+  \end{enumerate}
+  The cross-model result does not contradict the low ICC. It says: the subject-level
+  structure that does exist ($7.9\%$) is driven by the task, not the model.
+
+  \textbf{[What does Spearman $\rho = 0.846$ exactly say?]}
+  Spearman rank correlation ranks all 57 subjects by ECE separately for each model,
+  then measures how well those two orderings agree. $\rho = 0.846$ means the rankings
+  are strongly correlated --- subjects GPT ranks as most miscalibrated, Llama also
+  tends to rank near the top, and vice versa. It is a rank correlation (not Pearson),
+  so it is robust to outliers and non-linear scaling differences between the two models
+  --- it only asks ``do the orderings agree?'', not ``are the absolute ECE values the same?''
+  $\rho = 1.0$ would be perfect rank agreement; $\rho = 0$ would mean no relationship.
+  $0.846$ is strong. The bootstrap 95\% CI $[0.734, 0.910]$ confirms this is not a
+  fluke driven by a few extreme subjects.
+
+  \textbf{What does it imply?} If miscalibration were model-specific --- a quirk of
+  GPT's RLHF or Llama's supervised fine-tuning --- you would expect low correlation:
+  each model would have its own idiosyncratic hard subjects. The high $\rho$ means
+  the hardness is a property of the knowledge domain itself. Combined with 57/57
+  overlap, there is strong evidence that no subject escapes miscalibration and that
+  the ranking of which subjects are worst is determined by the task, not the model.
+
   This is a strong result — emphasize it: ``Both a large proprietary model fine-tuned
   with RLHF and a small open-weights model fine-tuned with supervised learning produce
   essentially the same pattern. The Spearman correlation of 0.846 means subject
@@ -423,6 +669,51 @@ Positive = overconfident; negative = underconfident.
   Point to the scatter plot: ``Every dot is red — both models reject. The dots above
   the diagonal are subjects where Llama is worse; below are where GPT is worse. But
   both are bad.''
+
+  \textbf{[If asked: what can and cannot be concluded from $\rho = 0.846$?]}
+  \textbf{Can conclude:}
+  \begin{itemize}
+    \item The subject rankings are highly consistent across models --- what GPT finds
+      hardest, Llama also finds hardest.
+    \item Miscalibration difficulty is a property of the knowledge domain, not of
+      how either model was trained. Model-specific fixes (retraining, better RLHF)
+      are unlikely to resolve it.
+  \end{itemize}
+  \textbf{Cannot conclude:}
+  \begin{itemize}
+    \item That absolute ECE values are the same --- Llama could be worse overall
+      while still ranking subjects identically. Spearman only compares orderings.
+    \item That this generalizes beyond these two models --- two models is suggestive
+      but not definitive. A broader comparison across families and scales would
+      strengthen the claim.
+    \item \emph{Why} certain subjects are harder --- whether it is abstractness of
+      reasoning, rarity in pretraining data, or something else is an open question.
+  \end{itemize}
+
+  \textbf{[If asked: what does `recalibration at the subject level' mean?]}
+  The standard recalibration method is \textbf{temperature scaling}: fit a single
+  scalar $T$ that divides all logits, shifting confidence up or down globally.
+  This is a model-level fix --- one parameter applied to every question regardless
+  of subject.
+
+  The problem: with a 13$\times$ range in gap magnitude, a single $T$ cannot work
+  for all subjects simultaneously. A temperature calibrated to fix moral scenarios
+  (gap $= 0.487$) would massively overcorrect marketing (gap $= 0.037$), making it
+  underconfident. A temperature appropriate for the average subject leaves moral
+  scenarios still badly miscalibrated.
+
+  \textbf{Subject-level recalibration} means fitting a separate temperature per
+  subject: $T_{\text{moral\_scenarios}}$, $T_{\text{marketing}}$, etc. When the
+  model answers a question, apply the temperature for that subject. This directly
+  addresses the heterogeneity.
+
+  \textbf{Why does $\rho = 0.846$ matter for this argument?} Because both GPT and
+  Llama rank the same subjects as hardest, the miscalibration is a property of the
+  knowledge domain itself --- something about moral reasoning or abstract algebra
+  is inherently hard to calibrate on, regardless of model architecture or training
+  procedure. Even a much better future model would likely show the same hard subjects.
+  The fix therefore needs to be applied at deployment time at the subject level,
+  not addressed by retraining the model.
 }
 
 \begin{frame}{Sensitivity analysis: are findings robust?}
@@ -473,9 +764,46 @@ Positive = overconfident; negative = underconfident.
   two Llama subjects that drop out at the strictest threshold have adjusted p-values
   of 0.014 and 0.031 — just above the cutoff. The finding is not alpha-sensitive.''
 
+  \textbf{[If asked: what does varying the BH $\alpha$ tell us?]}
+  BH $\alpha$ controls the expected proportion of false discoveries among all rejected
+  tests. At $\alpha = 0.05$, at most 5\% of rejections are expected to be false;
+  at $\alpha = 0.01$, at most 1\%.
+
+  If rejections were borderline --- p-values clustered just below the threshold ---
+  tightening $\alpha$ would flip many decisions. The fact that results barely move
+  (57/57 $\to$ 56/57 for GPT, 57/57 $\to$ 55/57 for Llama) shows almost all subjects
+  have adjusted p-values so far below any reasonable threshold that the BH correction
+  barely matters. The two or three subjects that drop at $\alpha = 0.01$ have adjusted
+  p-values of 0.014 and 0.031 --- just above the cutoff, not strongly non-significant.
+
+  Someone cannot dismiss the finding by saying ``you chose a lenient $\alpha$'' ---
+  at the strictest threshold tested you still reject 55--56 of 57 subjects.
+
+  This also reinforces the earlier point that 57/57 is not a deep finding: p-values
+  are near zero for most subjects because the global intercept (0.196) is large
+  relative to per-subject standard errors. BH has almost nothing to correct because
+  the evidence is overwhelming regardless of $\alpha$. The sensitivity check confirms
+  robustness, but the interesting result remains the 13$\times$ magnitude range,
+  not the binary rejection count.
+
   Column 3: ``Collapsing the domain level doesn't change the ICC estimates at all —
   because domain variance is zero anyway, the two-level and three-level models are
   numerically identical.''
+
+  \textbf{[If asked: why Spearman specifically for the bin sensitivity check?]}
+  Our conclusions rest on subject \emph{rankings}, not absolute ECE values:
+  the top-5 miscalibrated subjects are selected by rank, and the cross-model
+  comparison ($\rho = 0.846$) is itself a rank correlation. When we change bin
+  count, absolute ECE values do shift slightly (mean ECE goes from 0.190 at
+  10 bins to 0.194 at 30 bins) --- but that is expected and irrelevant.
+  What matters is whether the ordering of subjects changes.
+  Spearman $\rho$ directly measures rank agreement and ignores absolute scale
+  differences. Pearson would penalize the harmless shift in absolute values.
+  $\rho \geq 0.997$ for GPT means: no matter which bin count you choose between
+  10 and 30, the subject ordering is essentially identical.
+  The same logic applies to the NLCS comparison: we are not asking whether NLCS
+  equals ECE numerically, but whether they agree on which subjects are worst.
+  $\rho \geq 0.861$ says they do.
 }
 
 % ============================================================
@@ -485,43 +813,54 @@ Positive = overconfident; negative = underconfident.
 \begin{frame}{Takeaways}
 
 \begin{enumerate}
-  \item \textbf{Aggregate ECE understates heterogeneity.} 13$\times$ (GPT) and
-    6$\times$ (Llama) ranges in subject-level gaps are invisible in any single-number
-    summary.
+  \item \textbf{The unit of analysis is the subject, not the model.}
+    Aggregate ECE hides a 13$\times$ range in miscalibration magnitude.
+    57/57 subjects rejected is the wrong headline --- the magnitude variation is what matters.
 
   \vspace{0.4em}
-  \item \textbf{Miscalibration is task-driven, not model-specific.} Spearman
-    $\rho = 0.846$. The same domains are hardest to calibrate on across both tested models.
+  \item \textbf{Miscalibration is task-driven, so subject-level fixes are needed.}
+    Spearman $\rho = 0.846$ across two very different models means the same subjects
+    are hardest regardless of architecture or training.
+    Global temperature scaling cannot fix subject-specific structure.
 
   \vspace{0.4em}
-  \item \textbf{Global recalibration is insufficient.} A single temperature parameter
-    cannot fix subject-specific structure. Domain- or subject-aware recalibration is
-    warranted.
+  \item \textbf{The audit framework generalizes.}
+    Multilevel model + BH correction + shrinkage applies to any benchmark with
+    a hierarchical structure --- a reusable tool for honest calibration evaluation.
 
   \vspace{0.4em}
-  \item \textbf{The audit framework generalizes.} Mixed model + BH correction +
-    shrinkage applies to any benchmark with a hierarchical structure.
+  \item \textbf{Open questions remain.}
+    Two models is suggestive, not definitive. We can describe \emph{which} subjects
+    are hard but not \emph{why} --- abstractness, training data rarity, or something
+    else is still unknown.
 \end{enumerate}
 
 \vspace{0.4em}
-\textbf{Next steps:} subject-specific temperature scaling; extend to open-ended
-generation; replicate across model scale.
+\textbf{Next steps:} subject-specific temperature scaling; broader cross-model
+comparison; extend to open-ended generation.
 
 \end{frame}
 \note{
   \textbf{[~45 sec]}
 
-  Don't read the bullets — synthesize: ``There are two main takeaways. First,
-  aggregate ECE is the wrong unit of analysis — the heterogeneity it hides is
-  substantively large. Second, and more importantly, the miscalibration is
-  task-driven. Both a GPT-class model and a small open-weights model fail on
-  the same subjects. That means you can't train your way out of this — you need
-  subject-aware recalibration.''
+  Don't read the bullets --- synthesize across all four:
 
-  Land the practical implication: ``If you're deploying any instruction-tuned model
-  on professional knowledge tasks — legal, medical, mathematical — the aggregate
-  calibration number is not what you should be looking at. The gap is 10 times worse
-  on some subjects than others, and that pattern is consistent across models.''
+  ``The core finding is that the subject is the right unit of analysis for calibration,
+  not the model. Aggregate ECE hides a 13-fold range; 57/57 rejected sounds impressive
+  but is mostly a consequence of large sample size and global overconfidence --- the
+  magnitude variation is the finding that matters.''
+
+  ``The reason subject-level recalibration is needed, not model-level, is that
+  $\rho = 0.846$ across two very different models tells us the hardness is in the
+  knowledge domain itself. You cannot train your way out of it.''
+
+  ``We're honest about what we don't know: two models is suggestive not definitive,
+  and we can describe which subjects are hard but not why. That's the natural next step.''
+
+  Land the practical implication last: ``If you are deploying an instruction-tuned
+  model on professional tasks --- legal, medical, mathematical --- the aggregate
+  calibration number is not what you should be reporting. The gap is 13 times worse
+  on some subjects than others, and that pattern holds across models.''
 
   End confidently: ``The framework is the contribution. It gives you a statistically
   honest answer about where any model is unreliable, using only token-level logprobs

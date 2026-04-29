@@ -423,10 +423,15 @@ robust for both models.
 
 Figure~\ref{fig:crossmodel} shows the per-subject ECE scatter for GPT-4o-mini vs.\
 Llama-3-8B-Instruct, colored by agreement category. The Spearman rank correlation of
-subject-level ECE is $\rho = 0.846$ (bootstrap 95\% CI $[0.734, 0.910]$), indicating
-strong agreement in which subjects are most miscalibrated across the two very different
-model families. Because all 57 subjects are flagged as miscalibrated for both models,
-the correlation of calibration gaps provides the primary evidence of task-driven miscalibration.
+subject-level ECE is $\rho = 0.846$ (bootstrap 95\% CI $[0.734, 0.910]$).
+Spearman $\rho$ compares the two models' subject rankings directly: each of the 57
+subjects is ranked by ECE independently for each model, and $\rho$ measures how well
+those two ordered lists agree. $\rho = 1.0$ would indicate perfect rank agreement;
+$\rho = 0$ would indicate no relationship. Being a rank correlation rather than
+Pearson, it is robust to differences in absolute ECE scale between the two models and
+does not require the ECE values themselves to be equal---only that the orderings agree.
+The bootstrap 95\% CI $[0.734, 0.910]$ confirms the result is not driven by a small
+number of extreme subjects.
 
 The strong cross-model correlation supports the interpretation that subject-level
 miscalibration is primarily a property of the \emph{task}---the knowledge domain and
@@ -434,7 +439,21 @@ question structure---rather than of any particular model's training. Both RLHF
 fine-tuning of a large proprietary model (GPT-4o-mini) and supervised fine-tuning of a
 smaller open-weights model (Llama-3-8B-Instruct) produce the same pattern of
 domain-specific overconfidence, with humanities and abstract reasoning subjects
-consistently most affected across both models.
+consistently most affected across both models. If miscalibration were model-specific---a
+quirk of GPT-4o-mini's RLHF procedure or Llama's supervised fine-tuning---we would
+expect low rank correlation, with each model having its own idiosyncratic hard subjects.
+The observed $\rho = 0.846$ is inconsistent with that hypothesis.
+
+Three limitations of this conclusion warrant acknowledgment. First, the Spearman
+correlation measures agreement in subject \emph{rankings}, not in absolute ECE values;
+Llama-3-8B-Instruct could be worse in absolute terms while still ranking subjects
+similarly to GPT-4o-mini. Second, two models constitute suggestive but not definitive
+evidence---a broader comparison across model families, scales, and training procedures
+would strengthen the task-driven interpretation. Third, while we can establish that the
+same subjects are consistently hard to calibrate on, we cannot from this analysis
+explain \emph{why}---whether it is the abstractness of the reasoning required, the
+rarity of such content in pretraining data, or some other domain property remains an
+open question.
 
 \begin{figure}[h]
   \centering
@@ -503,6 +522,22 @@ per-subject accuracy. Third, confidence is computed from logprobs at a single to
 position; this may not faithfully represent the model's internal uncertainty, especially
 after RLHF fine-tuning \citep{kadavath2022language}. Fourth, results are specific to
 MMLU's four-choice format and may not generalize to open-ended generation settings.
+Fifth, the question-level fixed effects (word count, entropy) are estimated using
+predictors standardized across the full dataset rather than within subjects.
+This means the fixed effect estimates conflate two distinct quantities: the
+\emph{within-subject} effect (do longer questions within a given subject get larger
+gaps?) and the \emph{between-subject} effect (do subjects whose questions tend to be
+longer also tend to have larger gaps?). Although subject-level random intercepts are
+designed to absorb between-subject baseline differences, they do not fully partial out
+between-subject covariation between the predictors and the outcome when predictors
+are not group-mean centered. The correct approach would be to subtract each subject's
+mean covariate value from each question's value (group-mean centering), which would
+isolate pure within-subject effects. Without this, the fixed effects on word count and
+entropy are better interpreted as dataset-level associations between question features
+and calibration gap --- not as clean question-level causal effects. Importantly, the
+primary findings of this paper (ICC decomposition, subject-level gap magnitudes, and
+cross-model Spearman correlation) do not depend on the fixed effects and are unaffected
+by this limitation.
 Finally, Llama-3-8B-Instruct accuracy (60.6\%) is slightly below expected for this
 model, likely due to 4-bit quantization; this may affect calibration estimates modestly.
 
