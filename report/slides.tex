@@ -21,7 +21,7 @@
 \setbeameroption{hide notes}
 
 \title{A Statistical Audit of LLM Calibration\\Heterogeneity Across Knowledge Domains}
-\author{Jennifer Zhang}
+\author{Jennifer Zhang \and John Wright}
 \institute{STAT 215B, Spring 2026}
 \date{}
 
@@ -395,7 +395,11 @@ Positive = overconfident; negative = underconfident.
       \small
       Spearman $\rho = 0.846$ (95\% CI $[0.734, 0.910]$)\\[0.5em]
 
-      Same subjects are hardest to calibrate on across both tested models.
+      \textbf{Agreement breakdown:}
+      \begin{itemize}
+        \item \textbf{57/57} flagged by \emph{both} models
+        \item 0 GPT-only, 0 Llama-only
+      \end{itemize}
 
       \vspace{0.5em}
       \textbf{Implication:} miscalibration is a property of the \emph{task}, not the model.
@@ -431,9 +435,9 @@ Positive = overconfident; negative = underconfident.
     \textbf{1. ECE binning \& NLCS}\\[0.4em]
     \small
     $b \in \{10, 15, 20, 25, 30\}$ bins.\\[0.3em]
-    GPT: $\rho \geq \mathbf{[PLACEHOLDER]}$\\
-    Llama: $\rho \geq \mathbf{[PLACEHOLDER]}$\\[0.3em]
-    vs.\ unbinned NLCS: $\rho \geq \mathbf{[PLACEHOLDER]}$\\[0.3em]
+    GPT: $\rho \geq 0.997$\\
+    Llama: $\rho \geq 0.984$\\[0.3em]
+    vs.\ unbinned NLCS: $\rho \geq 0.861$\\[0.3em]
     \textbf{Rankings stable.}
   \end{column}
   \begin{column}{0.32\textwidth}
@@ -462,7 +466,7 @@ Positive = overconfident; negative = underconfident.
   modeling choices across both models.''
 
   Column 1: ``Subject rankings don't move when you change the number of ECE bins,
-  and they correlate almost perfectly ($\rho \ge \mathbf{[PLACEHOLDER]}$) with the unbinned Negative
+  and they correlate strongly ($\rho \ge 0.861$) with the unbinned Negative
   Log Calibration Score (NLCS). Our findings aren't artifacts of binning choices.''
 
   Column 2: ``At alpha=0.01, GPT still rejects 56/57 and Llama rejects 55/57. The

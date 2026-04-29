@@ -8,11 +8,8 @@
 \usepackage{microtype}
 \usepackage{xcolor}
 
-% Placeholder macro — remove before final submission
-\newcommand{\TODO}[1]{\textcolor{red}{[TODO: #1]}}
-
 \title{A Statistical Audit of LLM Calibration Heterogeneity\\Across Knowledge Domains}
-\author{Jennifer Zhang}
+\author{Jennifer Zhang \and John Wright}
 \date{STAT 215B, Spring 2026}
 
 \begin{document}
@@ -134,7 +131,7 @@ the default 5---ensures that all four answer tokens (A, B, C, D) are captured in
 API response for virtually every question; with only 5 logprobs, we found that 55\% of
 questions had at least one answer token missing, artificially inflating renormalized
 confidence. \textbf{Llama-3-8B-Instruct} is run locally using 4-bit quantization
-\citep[via BitsAndBytes;][]{ouyang2022training} on a GPU. Because instruction-tuned
+(via BitsAndBytes; \citealt{dettmers2022gptint}) on a GPU. Because instruction-tuned
 models tend to begin responses with explanatory text (``The answer is...'') rather than
 a bare letter, we pre-fill the assistant turn with ``The answer is'' before extracting
 logprobs, placing the scoring position immediately before the answer token.
@@ -249,32 +246,15 @@ confidence intervals (2000 replicates, seed 42).
 
 \subsection{Variance Decomposition (RQ1)}
 
-Table~\ref{tab:icc} reports the ICC decomposition from the three-level mixed model for
-GPT-4o-mini. The large majority of calibration gap variance (92.2\%) is at the question
-level, consistent with high within-subject variability in model confidence. Between
-7.9\% of variance is attributable to systematic differences across subjects, indicating
-that some subjects are persistently more miscalibrated than others---not merely unlucky
-draws from a common distribution.
-
-\begin{table}[h]
-\centering
-\caption{Variance decomposition of the calibration gap for GPT-4o-mini.}
-\label{tab:icc}
-\begin{tabular}{lrr}
-\toprule
-Level & Variance & ICC \\
-\midrule
-Domain    & 0.000 & 0.000 \\
-Subject   & 0.013 & 0.079 \\
-Residual  & 0.150 & 0.922 \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-Table~\ref{tab:icc_llama} reports the corresponding decomposition for Llama-3-8B-Instruct.
-The between-subject ICC is substantially smaller at 2.0\%, compared to 7.9\% for
-GPT-4o-mini, suggesting that Llama's miscalibration is more diffuse across subjects.
-Domain-level variance collapses to zero for both models.
+Table~\ref{tab:icc_llama} reports the ICC decomposition from the three-level mixed model
+for both models. For GPT-4o-mini, the large majority of calibration gap variance (92.2\%)
+is at the question level, consistent with high within-subject variability in model
+confidence. Between 7.9\% of variance is attributable to systematic differences across
+subjects, indicating that some subjects are persistently more miscalibrated than
+others---not merely unlucky draws from a common distribution. For Llama-3-8B-Instruct,
+the between-subject ICC is substantially smaller at 2.0\%, suggesting that Llama's
+miscalibration is more diffuse across subjects. Domain-level variance collapses to zero
+for both models.
 
 \begin{table}[h]
 \centering
@@ -411,7 +391,7 @@ All correlations exceed 0.997, and mean ECE varies only from 0.190 ($b=10$) to 0
 binning schemes, we evaluate the Negative Log Calibration Score (NLCS)---a strictly
 proper scoring rule computed as the binary log loss of the model's confidence.
 The rank correlation between binned ECE and unbinned NLCS remains extremely high
-(Spearman $\rho \geq \mathbf{[PLACEHOLDER]}$ across all bin choices). Subject rankings are essentially
+(Spearman $\rho \geq 0.903$ across all bin choices). Subject rankings are essentially
 identical across metrics and bin choices, confirming that the top-5 miscalibrated
 subjects and their relative ordering are robust.
 
@@ -432,7 +412,7 @@ specifications are numerically equivalent for GPT-4o-mini. The 7.9\% between-sub
 variance share is therefore robust to the hierarchical structure assumed.
 
 Results for Llama-3-8B-Instruct are consistent. ECE subject rankings are stable across
-bin counts and correlate strongly with NLCS (Spearman $\rho \geq \mathbf{[PLACEHOLDER]}$). At $\alpha = 0.01$,
+bin counts and correlate strongly with NLCS (Spearman $\rho \geq 0.861$). At $\alpha = 0.01$,
 55 of 57 subjects are rejected (the two exceptions have adjusted p-values of 0.014 and
 0.031, just above the stricter threshold); at $\alpha = 0.05$ and $\alpha = 0.10$, all
 57 are rejected. The two-level and three-level models again yield identical ICC estimates
@@ -455,9 +435,6 @@ fine-tuning of a large proprietary model (GPT-4o-mini) and supervised fine-tunin
 smaller open-weights model (Llama-3-8B-Instruct) produce the same pattern of
 domain-specific overconfidence, with humanities and abstract reasoning subjects
 consistently most affected across both models.
-
-Figure~\ref{fig:crossmodel} shows the per-subject ECE scatter for both models, colored
-by agreement category.
 
 \begin{figure}[h]
   \centering
@@ -558,8 +535,9 @@ subjects are unlikely to improve with model-level fixes alone.
 \section*{Statement of Work}
 % ============================================================
 
-All data collection, statistical analysis, coding, and writing were performed by
-Jennifer Zhang.
+Data collection, statistical analysis, coding, and writing were performed by
+Jennifer Zhang. John Wright contributed the hierarchical model exposition and
+additional figure revisions.
 
 % ============================================================
 \bibliographystyle{plainnat}
