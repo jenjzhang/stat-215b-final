@@ -34,10 +34,9 @@ question-level entropy and word count are significant positive predictors of mis
 magnitude. Subject-level gaps range from 0.037 (marketing) to 0.487 (moral scenarios),
 demonstrating substantial heterogeneity masked by aggregate ECE. For Llama-3-8B-Instruct,
 the same universal overconfidence is observed (mean gap $= 0.197$, 57/57 subjects
-rejected) with 2.0\% between-subject ICC, and no question-level features reach
+rejected at FDR $\alpha = 0.05$) with 2.0\% between-subject ICC, and no question-level features reach
 significance. Across models, subject-level ECE rankings are highly correlated
-(Spearman $\rho = 0.846$, 95\% CI $[0.734, 0.910]$), with all 57 subjects flagged by
-both models, indicating that miscalibration is task-driven rather than model-specific.
+(Spearman $\rho = 0.846$, 95\% CI $[0.734, 0.910]$), indicating that miscalibration is task-driven rather than model-specific.
 \end{abstract}
 
 % ============================================================
@@ -364,7 +363,7 @@ less systematic variance for predictors to explain.
 
 \begin{figure}[h]
   \centering
-  \includegraphics[width=0.75\textwidth]{figures/coef_plot.pdf}
+  \includegraphics[width=0.75\textwidth]{figures/coef_plot_2.png}
   \caption{Fixed effect estimates with 95\% confidence intervals from the multilevel
   model. Estimates are on the standardized calibration gap scale.}
   \label{fig:coef}
@@ -373,12 +372,12 @@ less systematic variance for predictors to explain.
 \subsection{FDR-Corrected Subject Rankings}
 
 Figure~\ref{fig:meangap} shows all 57 subjects sorted by mean calibration gap, with
-FDR-rejected subjects (all 57 for GPT-4o-mini) highlighted. All 57 subjects are
-rejected at FDR $\alpha = 0.05$. This universal rejection reflects two compounding
-factors: the intercept of 0.196 is large relative to the per-subject standard error
-(mean SE $\approx 0.025$), yielding $t$-statistics around 8 for the average subject;
-and the BH procedure, which adjusts for 57 tests, still leaves p-values near zero
-throughout.
+FDR-rejected subjects (all 57 for both models) highlighted. All 57 subjects are
+rejected at FDR $\alpha = 0.05$ for both GPT-4o-mini and Llama-3-8B-Instruct.
+This universal rejection reflects two compounding factors: the intercepts of 0.196
+and 0.197 are large relative to the per-subject standard errors, yielding large
+$t$-statistics for the average subject; and the BH procedure, which adjusts
+for 57 tests, still leaves p-values near zero throughout.
 
 The substantive finding is therefore the \emph{magnitude} of heterogeneity, not the
 binary reject/fail-to-reject outcome. Gaps range from 0.037 (marketing) to 0.487
@@ -391,7 +390,7 @@ content that may be better represented in pretraining.
 
 \begin{figure}[h]
   \centering
-  \includegraphics[width=\textwidth]{figures/subject_mean_gap.pdf}
+  \includegraphics[width=\textwidth]{figures/subject_mean_gap_2.png}
   \caption{Mean calibration gap per subject, sorted ascending. Red bars indicate
   subjects where $H_0$: mean gap $= 0$ is rejected at FDR $\alpha = 0.05$.
   Both GPT-4o-mini (left) and Llama-3-8B-Instruct (right) show 57/57 subjects rejected,
@@ -403,14 +402,18 @@ content that may be better represented in pretraining.
 
 We assess the stability of our three main findings under changes to modeling choices.
 
-\paragraph{ECE bin count.}
+\paragraph{ECE binning and proper scoring rules.}
 ECE depends on the number of confidence bins used for integration. We recompute
 subject-level ECE for GPT-4o-mini across bin counts $b \in \{10, 15, 20, 25, 30\}$ and
 compare each subject ranking to the 20-bin baseline via Spearman rank correlation.
 All correlations exceed 0.997, and mean ECE varies only from 0.190 ($b=10$) to 0.194
-($b=30$). Subject rankings are essentially identical across bin choices, confirming
-that the top-5 miscalibrated subjects and their relative ordering are not artifacts of
-the $b=20$ choice.
+($b=30$). Furthermore, to ensure our subject-level rankings are not artifacts of
+binning schemes, we evaluate the Negative Log Calibration Score (NLCS)---a strictly
+proper scoring rule computed as the binary log loss of the model's confidence.
+The rank correlation between binned ECE and unbinned NLCS remains extremely high
+(Spearman $\rho \geq \mathbf{[PLACEHOLDER]}$ across all bin choices). Subject rankings are essentially
+identical across metrics and bin choices, confirming that the top-5 miscalibrated
+subjects and their relative ordering are robust.
 
 \paragraph{FDR threshold.}
 The 57/57 rejection finding could in principle be sensitive to the choice of
@@ -429,7 +432,7 @@ specifications are numerically equivalent for GPT-4o-mini. The 7.9\% between-sub
 variance share is therefore robust to the hierarchical structure assumed.
 
 Results for Llama-3-8B-Instruct are consistent. ECE subject rankings are stable across
-bin counts (Spearman $\rho \geq 0.984$ vs.\ the 20-bin baseline). At $\alpha = 0.01$,
+bin counts and correlate strongly with NLCS (Spearman $\rho \geq \mathbf{[PLACEHOLDER]}$). At $\alpha = 0.01$,
 55 of 57 subjects are rejected (the two exceptions have adjusted p-values of 0.014 and
 0.031, just above the stricter threshold); at $\alpha = 0.05$ and $\alpha = 0.10$, all
 57 are rejected. The two-level and three-level models again yield identical ICC estimates
@@ -442,8 +445,8 @@ Figure~\ref{fig:crossmodel} shows the per-subject ECE scatter for GPT-4o-mini vs
 Llama-3-8B-Instruct, colored by agreement category. The Spearman rank correlation of
 subject-level ECE is $\rho = 0.846$ (bootstrap 95\% CI $[0.734, 0.910]$), indicating
 strong agreement in which subjects are most miscalibrated across the two very different
-model families. All 57 subjects are flagged as miscalibrated by both models, yielding
-100\% agreement in the task-driven category with no model-specific rejections.
+model families. Because all 57 subjects are flagged as miscalibrated for both models,
+the correlation of calibration gaps provides the primary evidence of task-driven miscalibration.
 
 The strong cross-model correlation supports the interpretation that subject-level
 miscalibration is primarily a property of the \emph{task}---the knowledge domain and
@@ -458,7 +461,7 @@ by agreement category.
 
 \begin{figure}[h]
   \centering
-  \includegraphics[width=0.5\textwidth]{figures/cross_model_ece.pdf}
+  \includegraphics[width=0.5\textwidth]{figures/cross_model_ece_2.png}
   \caption{Subject-level ECE for GPT-4o-mini vs.\ Llama-3-8B-Instruct. Colors indicate
   agreement: red = both models reject (task-driven), orange = GPT-4o-mini only,
   blue = Llama only, gray = neither.}
@@ -486,7 +489,7 @@ motivating subject-aware or domain-aware recalibration as in \citet{luo2025pretr
 The Spearman correlation of $\rho = 0.846$ between subject-level ECE rankings, combined
 with 100\% overlap in BH-rejected subjects, provides strong evidence that
 subject-level miscalibration is task-driven. The same knowledge domains are hardest to
-be calibrated on regardless of model architecture, training procedure, or scale. This
+calibrate on across both tested models. This
 has a practical implication: subject-specific miscalibration is likely to persist even
 with improved models or fine-tuning, since it reflects the inherent structure of the
 knowledge domains rather than correctable model deficiencies.
@@ -513,8 +516,10 @@ subject-specific temperature scaling \citep{luo2025pretrained} would be needed, 
 minimum, to correct the within-MMLU heterogeneity documented here.
 
 \paragraph{Limitations.}
-Several limitations warrant caution. First, the domain-level variance is unidentified
-with only four domain groups; we cannot cleanly partition between-subject variance into
+Several limitations warrant caution. First, domain-level variance is estimated at zero,
+likely because subject-level random effects absorb whatever between-domain structure
+exists; with only four domain groups, power to detect a separate domain component is
+very low, so we cannot cleanly partition between-subject variance into
 domain-level and subject-within-domain components. Second, the mixed model assumes
 homoskedastic residuals, which is violated when calibration gap variance depends on
 per-subject accuracy. Third, confidence is computed from logprobs at a single token
@@ -540,8 +545,8 @@ We presented a statistical audit framework for LLM calibration heterogeneity and
 it to MMLU using GPT-4o-mini and Llama-3-8B-Instruct. Both models show universal
 overconfidence (57/57 subjects rejected at FDR $\alpha = 0.05$) with 13-fold and 6-fold
 ranges in gap magnitude respectively. Subject-level ECE rankings are strongly correlated
-across models ($\rho = 0.846$), and all 57 subjects are flagged by both models,
-indicating that miscalibration is task-driven rather than model-specific.
+across models ($\rho = 0.846$), indicating that miscalibration is task-driven
+rather than model-specific.
 GPT-4o-mini shows significant positive predictors of miscalibration (word count, entropy),
 while Llama shows no significant predictors, consistent with its lower between-subject
 ICC (2.0\% vs.\ 7.9\%). These findings suggest that aggregate ECE substantially

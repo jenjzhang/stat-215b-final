@@ -55,6 +55,22 @@ def subject_ece(df: pd.DataFrame, n_bins: int) -> pd.Series:
     return pd.Series(rows)
 
 
+def compute_nlcs(confidence: np.ndarray, correct: np.ndarray) -> float:
+    eps = 1e-12
+    conf = np.clip(confidence, eps, 1 - eps)
+    return float(-np.mean(correct * np.log(conf) + (1 - correct) * np.log(1 - conf)))
+
+
+def subject_nlcs(df: pd.DataFrame) -> pd.Series:
+    rows = {}
+    for subj, grp in df.groupby("subject"):
+        rows[subj] = compute_nlcs(
+            grp["confidence"].values,
+            grp["correct"].astype(float).values,
+        )
+    return pd.Series(rows)
+
+
 # ---------------------------------------------------------------------------
 # BH helper
 # ---------------------------------------------------------------------------
@@ -151,20 +167,24 @@ def run(model: str):
     results = {}
 
     # ------------------------------------------------------------------
-    # 1. ECE bin-count sensitivity
+    # 1. ECE bin-count sensitivity (and NLCS robustness)
     # ------------------------------------------------------------------
     print(f"\n[{model}] ECE bin-count sensitivity")
     baseline_ece = subject_ece(df, BASELINE_BINS)
+    subj_nlcs = subject_nlcs(df)
     bin_results = {}
     for n_bins in BIN_COUNTS:
         ece_n = subject_ece(df, n_bins)
-        rho, _ = spearmanr(baseline_ece, ece_n)
+        rho_base, _ = spearmanr(baseline_ece, ece_n)
+        rho_nlcs, _ = spearmanr(subj_nlcs, ece_n)
         bin_results[n_bins] = {
-            "spearman_vs_baseline": round(float(rho), 4),
+            "spearman_vs_baseline": round(float(rho_base), 4),
+            "spearman_vs_nlcs": round(float(rho_nlcs), 4),
             "mean_ece": round(float(ece_n.mean()), 4),
         }
-        print(f"  bins={n_bins:2d}: mean ECE={ece_n.mean():.4f}, Spearman vs. 20-bin={rho:.4f}")
+        print(f"  bins={n_bins:2d}: mean ECE={ece_n.mean():.4f}, Spearman vs. 20-bin={rho_base:.4f}, vs. NLCS={rho_nlcs:.4f}")
     results["ece_bins"] = bin_results
+    results["overall_mean_nlcs"] = round(float(subj_nlcs.mean()), 4)
 
     # ------------------------------------------------------------------
     # 2. FDR threshold sensitivity

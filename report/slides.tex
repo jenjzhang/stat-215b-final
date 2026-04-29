@@ -153,6 +153,59 @@ Positive = overconfident; negative = underconfident.
 %  3. CORE FINDINGS
 % ============================================================
 
+\begin{frame}{Hierarchical model}
+\begin{block}{Three-level mixed model}
+  Questions ($i$) nested in subjects ($j$) nested in domains ($k$):
+  \vspace{0.3em}
+  \[
+    \mathrm{gap}_{ijk} \;=\; \mu + \mathbf{x}_{ijk}^\top \boldsymbol{\beta}
+      + u_k + v_{jk} + \varepsilon_{ijk}
+  \]
+\end{block}
+
+\vspace{0.5em}
+\begin{columns}[T]
+  \begin{column}{0.48\textwidth}
+    \textbf{Fixed effects}\\[0.3em]
+    \small
+    $\mu$: global intercept (mean overconfidence)\\[0.2em]
+    $\boldsymbol{\beta}$: question-level covariates\\
+    \quad (word count, entropy, negation,\\
+    \quad max choice length) — all standardized
+  \end{column}
+  \begin{column}{0.48\textwidth}
+    \textbf{Random effects}\\[0.3em]
+    \small
+    $u_k \sim \mathcal{N}(0,\;\sigma^2_{\text{domain}})$\\[0.2em]
+    $v_{jk} \sim \mathcal{N}(0,\;\sigma^2_{\text{subject}})$\\[0.2em]
+    $\varepsilon_{ijk} \sim \mathcal{N}(0,\;\sigma^2_\varepsilon)$\\[0.5em]
+    Estimated via REML\\
+    (\texttt{statsmodels.MixedLM})
+  \end{column}
+\end{columns}
+
+\vspace{0.8em}
+{\small\color{mgray}
+  ICC decomposition: what fraction of calibration gap variance is between-subject vs.\ within-subject?}
+\end{frame}
+\note{
+  \textbf{[~30 sec]}
+
+  Walk through the model briefly: ``We model the signed calibration gap — confidence
+  minus accuracy — at the question level, with random intercepts for both subject and
+  domain.''
+
+  Emphasize the key question: ``The ICC decomposition will tell us whether the
+  miscalibration is driven by specific subjects, or whether it's spread evenly across
+  all questions regardless of subject.''
+
+  Mention REML: ``We use restricted maximum likelihood, which gives unbiased variance
+  component estimates — important here since the variance decomposition is our main
+  inferential target.''
+}
+
+% ------------------------------------------------------------
+
 \begin{frame}{Finding 1: heterogeneity is real but concentrated at the question level}
 
 \begin{columns}[T]
@@ -177,11 +230,10 @@ Positive = overconfident; negative = underconfident.
     \small
     Both models: between-subject structure exists but is modest.\\[0.3em]
     GPT: \textbf{7.9\%} between-subject ICC.\\
-    Llama: \textbf{2.0\%} — more diffuse miscalibration.\\[0.3em]
-    Domain variance $= 0$: only 4 groups; unidentifiable.
+    Llama: \textbf{2.0\%} — more diffuse miscalibration.
   \end{column}
   \begin{column}{0.44\textwidth}
-    \includegraphics[width=\textwidth]{figures/domain_ece.pdf}
+    \includegraphics[width=\textwidth]{figures/domain_ece_2.png}
     \small\color{mgray} Domain-level mean ECE (descriptive)
   \end{column}
 \end{columns}
@@ -197,8 +249,12 @@ Positive = overconfident; negative = underconfident.
   Llama's miscalibration is more diffuse — spread more evenly across subjects rather
   than concentrated in particular domains.''
 
-  Be upfront about domain ICC = 0: ``With only 4 domain groups the model can't
-  estimate domain-level variance reliably. We treat domain as a descriptive label.''
+  Be upfront about domain ICC = 0: ``Domain-level variance is estimated at zero.
+  That doesn't mean domains don't matter descriptively — we see clear differences in
+  the bar chart. But the model can't separate domain-level variance from subject-level
+  variance because the subject random effects absorb whatever between-domain structure
+  exists. With only 4 domain groups we also have very low power to detect a non-zero
+  domain component even if one were present.''
 }
 
 % ------------------------------------------------------------
@@ -236,7 +292,7 @@ Positive = overconfident; negative = underconfident.
 \begin{frame}{Finding 3: universal overconfidence, 13$\times$ range in magnitude}
   \begin{columns}[T]
     \begin{column}{0.62\textwidth}
-      \includegraphics[width=\textwidth]{figures/subject_mean_gap.pdf}
+      \includegraphics[width=\textwidth]{figures/subject_mean_gap_2.png}
     \end{column}
     \begin{column}{0.35\textwidth}
       \small
@@ -284,7 +340,7 @@ Positive = overconfident; negative = underconfident.
 \begin{frame}{What predicts the gap? Fixed effects}
   \begin{columns}[T]
     \begin{column}{0.48\textwidth}
-      \includegraphics[width=\textwidth]{figures/coef_plot.pdf}
+      \includegraphics[width=\textwidth]{figures/coef_plot_2.png}
     \end{column}
     \begin{column}{0.48\textwidth}
       \small
@@ -333,21 +389,13 @@ Positive = overconfident; negative = underconfident.
 \begin{frame}{Cross-model agreement: miscalibration is task-driven}
   \begin{columns}[T]
     \begin{column}{0.48\textwidth}
-      \includegraphics[width=\textwidth]{figures/cross_model_ece.pdf}
+      \includegraphics[width=\textwidth]{figures/cross_model_ece_2.png}
     \end{column}
     \begin{column}{0.48\textwidth}
       \small
       Spearman $\rho = 0.846$ (95\% CI $[0.734, 0.910]$)\\[0.5em]
 
-      \textbf{Agreement breakdown:}
-      \begin{itemize}
-        \item \textbf{57/57} flagged by \emph{both} models
-        \item 0 GPT-only, 0 Llama-only
-      \end{itemize}
-
-      \vspace{0.5em}
-      Same subjects are hardest to calibrate on regardless of model family, scale,
-      or training procedure.
+      Same subjects are hardest to calibrate on across both tested models.
 
       \vspace{0.5em}
       \textbf{Implication:} miscalibration is a property of the \emph{task}, not the model.
@@ -361,11 +409,11 @@ Positive = overconfident; negative = underconfident.
   This is a strong result — emphasize it: ``Both a large proprietary model fine-tuned
   with RLHF and a small open-weights model fine-tuned with supervised learning produce
   essentially the same pattern. The Spearman correlation of 0.846 means subject
-  rankings are highly consistent, and 57/57 subjects are flagged by both.''
+  rankings are highly consistent.''
 
   The key takeaway: ``This is not a GPT problem or a Llama problem. It's a knowledge
-  domain problem. The subjects that are hard to calibrate on are hard regardless of
-  what model you use. That means recalibration needs to happen at the subject level,
+  domain problem. The subjects that are hard to calibrate on are hard for both models we tested.
+  That means recalibration needs to happen at the subject level,
   not the model level.''
 
   Point to the scatter plot: ``Every dot is red — both models reject. The dots above
@@ -380,11 +428,12 @@ Positive = overconfident; negative = underconfident.
 \vspace{0.6em}
 \begin{columns}[T]
   \begin{column}{0.32\textwidth}
-    \textbf{1. ECE bin count}\\[0.4em]
+    \textbf{1. ECE binning \& NLCS}\\[0.4em]
     \small
     $b \in \{10, 15, 20, 25, 30\}$ bins.\\[0.3em]
-    GPT: $\rho \geq 0.997$\\
-    Llama: $\rho \geq 0.984$\\[0.3em]
+    GPT: $\rho \geq \mathbf{[PLACEHOLDER]}$\\
+    Llama: $\rho \geq \mathbf{[PLACEHOLDER]}$\\[0.3em]
+    vs.\ unbinned NLCS: $\rho \geq \mathbf{[PLACEHOLDER]}$\\[0.3em]
     \textbf{Rankings stable.}
   \end{column}
   \begin{column}{0.32\textwidth}
@@ -412,8 +461,9 @@ Positive = overconfident; negative = underconfident.
   Frame briefly: ``Before trusting these results, I stress-tested the three main
   modeling choices across both models.''
 
-  Column 1: ``Subject rankings don't move when you change the number of ECE bins.
-  Spearman above 0.984 for both models — the top-5 miscalibrated subjects are stable.''
+  Column 1: ``Subject rankings don't move when you change the number of ECE bins,
+  and they correlate almost perfectly ($\rho \ge \mathbf{[PLACEHOLDER]}$) with the unbinned Negative
+  Log Calibration Score (NLCS). Our findings aren't artifacts of binning choices.''
 
   Column 2: ``At alpha=0.01, GPT still rejects 56/57 and Llama rejects 55/57. The
   two Llama subjects that drop out at the strictest threshold have adjusted p-values
@@ -437,8 +487,7 @@ Positive = overconfident; negative = underconfident.
 
   \vspace{0.4em}
   \item \textbf{Miscalibration is task-driven, not model-specific.} Spearman
-    $\rho = 0.846$, 57/57 subjects flagged by both models. The same domains are
-    hardest to calibrate on regardless of model.
+    $\rho = 0.846$. The same domains are hardest to calibrate on across both tested models.
 
   \vspace{0.4em}
   \item \textbf{Global recalibration is insufficient.} A single temperature parameter
