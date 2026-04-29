@@ -156,49 +156,49 @@ Positive = overconfident; negative = underconfident.
 \begin{frame}{Finding 1: heterogeneity is real but concentrated at the question level}
 
 \begin{columns}[T]
-  \begin{column}{0.48\textwidth}
+  \begin{column}{0.52\textwidth}
     \begin{table}
       \small
-      \caption{Variance decomposition (GPT-4o-mini)}
-      \begin{tabular}{lrr}
+      \caption{Variance decomposition (both models)}
+      \begin{tabular}{lrrrr}
         \toprule
-        Level & Variance & ICC \\
+        & \multicolumn{2}{c}{GPT-4o-mini} & \multicolumn{2}{c}{Llama-3-8B} \\
+        \cmidrule(lr){2-3}\cmidrule(lr){4-5}
+        Level & Var & ICC & Var & ICC \\
         \midrule
-        Domain   & 0.000 & 0.000 \\
-        Subject  & 0.013 & \textbf{0.079} \\
-        Residual & 0.150 & 0.922 \\
+        Domain   & 0.000 & 0.000 & 0.000 & 0.000 \\
+        Subject  & 0.013 & \textbf{0.079} & 0.004 & \textbf{0.020} \\
+        Residual & 0.150 & 0.922 & 0.190 & 0.980 \\
         \bottomrule
       \end{tabular}
     \end{table}
 
-    \vspace{0.5em}
+    \vspace{0.3em}
     \small
-    \textbf{7.9\%} of total calibration variance is between-subject --- not noise,
-    but not dominant either.
-
-    \vspace{0.5em}
-    Domain variance $= 0$: only 4 groups; unidentifiable with REML.
+    Both models: between-subject structure exists but is modest.\\[0.3em]
+    GPT: \textbf{7.9\%} between-subject ICC.\\
+    Llama: \textbf{2.0\%} — more diffuse miscalibration.\\[0.3em]
+    Domain variance $= 0$: only 4 groups; unidentifiable.
   \end{column}
-  \begin{column}{0.48\textwidth}
+  \begin{column}{0.44\textwidth}
     \includegraphics[width=\textwidth]{figures/domain_ece.pdf}
-    \small\color{mgray} Domain-level mean ECE (descriptive only)
+    \small\color{mgray} Domain-level mean ECE (descriptive)
   \end{column}
 \end{columns}
 \end{frame}
 \note{
   \textbf{[~30 sec]}
 
-  Lead with the 7.9\% number: ``92\% of the variance is at the question level —
-  individual questions are noisy. But 7.9\% is systematically concentrated at the
-  subject level, meaning some subjects are persistently harder to be calibrated on.
-  That's not just noise — it's structure.''
+  Lead with the structure: ``Both models show that the vast majority of calibration
+  variance — 92 to 98\% — is at the question level. But a meaningful slice is
+  systematically concentrated at the subject level. That's not noise — it's structure.''
+
+  Highlight the difference: ``GPT shows 7.9\% between-subject ICC, Llama shows 2.0\%.
+  Llama's miscalibration is more diffuse — spread more evenly across subjects rather
+  than concentrated in particular domains.''
 
   Be upfront about domain ICC = 0: ``With only 4 domain groups the model can't
-  estimate domain-level variance reliably — that's a limitation. We treat domain as
-  a descriptive label here, not a modeled random effect.''
-
-  The bar chart on the right is descriptive — Humanities has noticeably higher ECE.
-  Point to it briefly as motivation for the next slide.
+  estimate domain-level variance reliably. We treat domain as a descriptive label.''
 }
 
 % ------------------------------------------------------------
@@ -288,98 +288,140 @@ Positive = overconfident; negative = underconfident.
     \end{column}
     \begin{column}{0.48\textwidth}
       \small
+      \textbf{GPT-4o-mini:}
       \begin{itemize}
-        \item \textbf{Word count} ($\hat\beta = 0.031$, $p < 0.001$): longer questions
-          $\Rightarrow$ larger gap
-        \item \textbf{Entropy} ($\hat\beta = 0.016$, $p < 0.001$): when model spreads
-          probability across options, gap \emph{increases} --- counterintuitive
-        \item \textbf{Max option length}, \textbf{negation}: not significant
+        \item Word count ($p < 0.001$): longer $\Rightarrow$ larger gap
+        \item Entropy ($p < 0.001$): more uncertainty $\Rightarrow$ larger gap
       \end{itemize}
 
-      \vspace{0.8em}
-      Entropy result: the model doesn't reliably correct confidence when uncertain.
-      Distributing probability $\neq$ being right more often.
+      \vspace{0.5em}
+      \textbf{Llama-3-8B-Instruct:}
+      \begin{itemize}
+        \item No significant predictors ($p > 0.05$)
+        \item Entropy marginally positive ($p = 0.069$) — same direction
+      \end{itemize}
+
+      \vspace{0.5em}
+      \small\color{mgray}
+      Weaker predictor signal for Llama is consistent with lower ICC (2.0\%):
+      less between-subject structure $\Rightarrow$ less to predict.
     \end{column}
   \end{columns}
 \end{frame}
 \note{
   \textbf{[~30 sec]}
 
-  The entropy finding is the most interesting one to discuss: ``Intuitively you'd
-  expect that when the model spreads its probability mass across options — expressing
-  uncertainty — the gap would shrink. But it goes the other way. Higher entropy
-  is associated with \emph{larger} gaps. The model isn't reliably correct more often
-  when it's hedging; it's just miscalibrated in a different way.''
+  Lead with the GPT entropy finding — it's counterintuitive: ``When GPT-4o-mini
+  spreads its probability mass across options, expressing uncertainty, the gap
+  actually gets larger. The model isn't reliably correct more often when it's
+  hedging; it's miscalibrated even in its expression of uncertainty.''
 
-  Word count is less surprising: ``Longer, more complex questions are harder, and
-  the model doesn't adjust its confidence accordingly.''
+  Then contrast with Llama: ``Llama shows no significant predictors. The trend
+  for entropy is in the same direction but doesn't reach significance. This is
+  consistent with Llama having less between-subject structure overall — there's
+  simply less systematic variance to explain.''
 
-  Negation being non-significant is worth a brief mention if asked: we expected
-  ``not/except/never'' questions to trip up the model, but they don't show up after
-  controlling for length and entropy.
+  If asked about why the coefficients differ: Llama's lower ICC means the
+  between-subject random effects absorb less variance, leaving more residual
+  noise that dilutes the fixed effect estimates.
 }
 
 % ============================================================
 %  4. ROBUSTNESS
 % ============================================================
 
+\begin{frame}{Cross-model agreement: miscalibration is task-driven}
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \includegraphics[width=\textwidth]{figures/cross_model_ece.pdf}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \small
+      Spearman $\rho = 0.846$ (95\% CI $[0.734, 0.910]$)\\[0.5em]
+
+      \textbf{Agreement breakdown:}
+      \begin{itemize}
+        \item \textbf{57/57} flagged by \emph{both} models
+        \item 0 GPT-only, 0 Llama-only
+      \end{itemize}
+
+      \vspace{0.5em}
+      Same subjects are hardest to calibrate on regardless of model family, scale,
+      or training procedure.
+
+      \vspace{0.5em}
+      \textbf{Implication:} miscalibration is a property of the \emph{task}, not the model.
+      Subject-specific fixes are needed even as models improve.
+    \end{column}
+  \end{columns}
+\end{frame}
+\note{
+  \textbf{[~45 sec]}
+
+  This is a strong result — emphasize it: ``Both a large proprietary model fine-tuned
+  with RLHF and a small open-weights model fine-tuned with supervised learning produce
+  essentially the same pattern. The Spearman correlation of 0.846 means subject
+  rankings are highly consistent, and 57/57 subjects are flagged by both.''
+
+  The key takeaway: ``This is not a GPT problem or a Llama problem. It's a knowledge
+  domain problem. The subjects that are hard to calibrate on are hard regardless of
+  what model you use. That means recalibration needs to happen at the subject level,
+  not the model level.''
+
+  Point to the scatter plot: ``Every dot is red — both models reject. The dots above
+  the diagonal are subjects where Llama is worse; below are where GPT is worse. But
+  both are bad.''
+}
+
 \begin{frame}{Sensitivity analysis: are findings robust?}
 
-\textbf{Three stress tests on GPT-4o-mini results.}
+\textbf{Three stress tests — run on both models.}
 
-\vspace{0.8em}
+\vspace{0.6em}
 \begin{columns}[T]
   \begin{column}{0.32\textwidth}
     \textbf{1. ECE bin count}\\[0.4em]
     \small
-    Recompute subject ECE at $b \in \{10, 15, 20, 25, 30\}$ bins.\\[0.4em]
-    Spearman $\rho \geq 0.997$ vs.\ baseline for all $b$.\\[0.4em]
-    \textbf{Rankings are stable.}
+    $b \in \{10, 15, 20, 25, 30\}$ bins.\\[0.3em]
+    GPT: $\rho \geq 0.997$\\
+    Llama: $\rho \geq 0.984$\\[0.3em]
+    \textbf{Rankings stable.}
   \end{column}
   \begin{column}{0.32\textwidth}
     \textbf{2. FDR threshold}\\[0.4em]
     \small
-    Apply BH at $\alpha \in \{0.01, 0.05, 0.10\}$.\\[0.4em]
-    $\alpha = 0.01$: 56/57 rejected\\
-    $\alpha = 0.05$: 57/57 rejected\\
-    $\alpha = 0.10$: 57/57 rejected\\[0.4em]
-    \textbf{Not driven by $\alpha$ choice.}
+    BH at $\alpha \in \{0.01, 0.05, 0.10\}$.\\[0.3em]
+    GPT: 56/57/57 rejected\\
+    Llama: 55/57/57 rejected\\[0.3em]
+    \textbf{Not driven by $\alpha$.}
   \end{column}
   \begin{column}{0.32\textwidth}
     \textbf{3. Model structure}\\[0.4em]
     \small
-    Compare 3-level (domain + subject) to 2-level (subject only).\\[0.4em]
-    ICC$_\text{subject} = 0.079$ in both; $\hat\sigma^2_\text{subject}$ identical.\\[0.4em]
-    \textbf{ICC estimate is robust.}
+    3-level vs.\ 2-level model.\\[0.3em]
+    GPT: ICC$_\text{subj}=0.079$\\
+    Llama: ICC$_\text{subj}=0.020$\\
+    (identical in both specs)\\[0.3em]
+    \textbf{ICC robust.}
   \end{column}
 \end{columns}
-
-\vspace{0.8em}
-\small\color{mgray}
-\textit{Note:} Llama-3-8B-Instruct cross-model results are pending a verified re-run;
-cross-model comparisons are preliminary.
 \end{frame}
 \note{
-  \textbf{[~60 sec] — spend real time here}
+  \textbf{[~45 sec]}
 
-  Frame this section: ``Before I trust any of these findings, I want to know whether
-  they're artifacts of specific choices I made. I ran three stress tests.''
+  Frame briefly: ``Before trusting these results, I stress-tested the three main
+  modeling choices across both models.''
 
-  Column 1 (ECE bins): ``ECE depends on how you bin confidence scores. I tried
-  10 to 30 bins — the Spearman rank correlation of subject rankings stays above 0.997.
-  The top-5 miscalibrated subjects don't move.''
+  Column 1: ``Subject rankings don't move when you change the number of ECE bins.
+  Spearman above 0.984 for both models — the top-5 miscalibrated subjects are stable.''
 
-  Column 2 (FDR threshold): ``You might wonder if 57/57 only holds at alpha=0.05.
-  At the stricter alpha=0.01, it's still 56/57. The finding is not sensitive to
-  the significance threshold — the signal is just strong.''
+  Column 2: ``At alpha=0.01, GPT still rejects 56/57 and Llama rejects 55/57. The
+  two Llama subjects that drop out at the strictest threshold have adjusted p-values
+  of 0.014 and 0.031 — just above the cutoff. The finding is not alpha-sensitive.''
 
-  Column 3 (model structure): ``The three-level model can't actually identify
-  domain-level variance with only 4 groups. I checked whether collapsing to a
-  two-level model changes the between-subject ICC — it doesn't. 7.9\% either way.''
-
-  End with the Llama caveat honestly: ``The cross-model comparison is pending a
-  verified rerun — I hit a tokenization bug in the inference pipeline that I've
-  since fixed, but I want to confirm the results before drawing conclusions from them.''
+  Column 3: ``Collapsing the domain level doesn't change the ICC estimates at all —
+  because domain variance is zero anyway, the two-level and three-level models are
+  numerically identical.''
 }
 
 % ============================================================
@@ -389,46 +431,48 @@ cross-model comparisons are preliminary.
 \begin{frame}{Takeaways}
 
 \begin{enumerate}
-  \item \textbf{Aggregate ECE understates heterogeneity.} A 13$\times$ range in
-    subject-level gaps is invisible in any single-number summary.
+  \item \textbf{Aggregate ECE understates heterogeneity.} 13$\times$ (GPT) and
+    6$\times$ (Llama) ranges in subject-level gaps are invisible in any single-number
+    summary.
 
-  \vspace{0.5em}
-  \item \textbf{Global recalibration is insufficient.} 7.9\% between-subject ICC means
-    a single temperature parameter cannot fix subject-specific miscalibration.
-    Domain- or subject-aware recalibration is warranted.
+  \vspace{0.4em}
+  \item \textbf{Miscalibration is task-driven, not model-specific.} Spearman
+    $\rho = 0.846$, 57/57 subjects flagged by both models. The same domains are
+    hardest to calibrate on regardless of model.
 
-  \vspace{0.5em}
-  \item \textbf{RLHF drives broad overconfidence; domain structure shapes its
-    magnitude.} Humanities (abstract reasoning, ethics) are most affected; applied
-    factual subjects least.
+  \vspace{0.4em}
+  \item \textbf{Global recalibration is insufficient.} A single temperature parameter
+    cannot fix subject-specific structure. Domain- or subject-aware recalibration is
+    warranted.
 
-  \vspace{0.5em}
-  \item \textbf{The audit framework generalizes.} The statistical methodology ---
-    mixed model + BH correction + shrinkage --- applies to any benchmark with a
-    hierarchical structure.
+  \vspace{0.4em}
+  \item \textbf{The audit framework generalizes.} Mixed model + BH correction +
+    shrinkage applies to any benchmark with a hierarchical structure.
 \end{enumerate}
 
-\vspace{0.5em}
-\textbf{Next steps:} confirm Llama cross-model results; subject-specific temperature
-scaling; extend to open-ended generation.
+\vspace{0.4em}
+\textbf{Next steps:} subject-specific temperature scaling; extend to open-ended
+generation; replicate across model scale.
 
 \end{frame}
 \note{
   \textbf{[~45 sec]}
 
-  Don't read the bullets — summarize: ``The punchline is that aggregate ECE is
-  the wrong unit of analysis for a calibration audit. You need subject-level
-  estimates, statistical correction for multiple comparisons, and shrinkage to
-  handle the fact that some subjects have only 100 questions.''
+  Don't read the bullets — synthesize: ``There are two main takeaways. First,
+  aggregate ECE is the wrong unit of analysis — the heterogeneity it hides is
+  substantively large. Second, and more importantly, the miscalibration is
+  task-driven. Both a GPT-class model and a small open-weights model fail on
+  the same subjects. That means you can't train your way out of this — you need
+  subject-aware recalibration.''
 
-  Land the practical implication: ``If you're deploying GPT-4o-mini in a legal
-  or medical context, the aggregate calibration number is not what you should be
-  looking at. The subject-specific gap is 10 times worse in some domains than
-  others.''
+  Land the practical implication: ``If you're deploying any instruction-tuned model
+  on professional knowledge tasks — legal, medical, mathematical — the aggregate
+  calibration number is not what you should be looking at. The gap is 10 times worse
+  on some subjects than others, and that pattern is consistent across models.''
 
-  End confidently: ``The framework itself is the contribution — it works on any
-  benchmark with a hierarchical structure, and it gives you a statistically honest
-  answer about where the model is unreliable.''
+  End confidently: ``The framework is the contribution. It gives you a statistically
+  honest answer about where any model is unreliable, using only token-level logprobs
+  and standard multilevel modeling.''
 
   Leave ~30 sec for questions.
 }

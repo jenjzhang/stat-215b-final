@@ -58,7 +58,7 @@ def add_features(mmlu: pd.DataFrame, responses: pd.DataFrame) -> pd.DataFrame:
 def main():
     mmlu = pd.read_parquet(RAW / "mmlu.parquet")
 
-    for model, fname in [("gpt4o", "gpt4o_responses_top20.parquet"), ("llama", "llama_instruct_responses.parquet copy")]:
+    for model, fname in [("gpt4o", "gpt4o_responses_top20.parquet"), ("llama", "llama_instruct_responses_final.parquet")]:
         resp_path = RAW / fname
         if not resp_path.exists():
             print(f"Skipping {model}: {resp_path} not found")
