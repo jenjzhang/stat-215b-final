@@ -34,3 +34,4 @@ env/
 *.synctex.gz
 report/notes.pdf
 report/slides.pdf
+.vscode/
