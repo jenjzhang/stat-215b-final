@@ -1,6 +1,7 @@
 # Data — never commit raw API responses or large datasets
 data/raw/
 data/processed/
+data.nosync
 
 # Secrets
 .env
