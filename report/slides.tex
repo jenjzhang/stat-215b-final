@@ -187,7 +187,7 @@ Llama-3-8B-Instruct.
   \begin{itemize}
     \item \textbf{Calibration gap} (question-level, signed): outcome for the
       multilevel regression; BH t-tests test whether subject mean gap $= 0$;
-      bar chart shows shrunken subject mean gaps (BLUPs); variance decomposition
+      bar chart shows raw subject mean gaps; variance decomposition
       and ICC are computed on gap variance.
     \item \textbf{ECE} (subject-level scalar, unsigned): used to rank subjects
       (top-5 most miscalibrated); drives the reliability curves; cross-model
@@ -366,8 +366,8 @@ Llama-3-8B-Instruct.
     \item $v_{jk}$: the subject random intercept --- how much subject $j$ within
       domain $k$ (e.g., abstract algebra within STEM) shifts the gap. This is the
       key term: its variance $\sigma^2_\text{subject}$ tells us how much subjects
-      systematically differ. The estimated $v_{jk}$ values are the BLUPs shown in
-      the bar chart.
+      systematically differ. The estimated $v_{jk}$ values are the BLUPs; the
+      bar chart plots raw subject mean gaps (numerically very close to BLUPs).
     \item $\varepsilon_{ijk}$: question-level noise --- all the variation that cannot
       be explained by subject membership or measurable features. For GPT this is 92\%
       of total variance; for Llama, 98\%.
@@ -621,21 +621,15 @@ Llama-3-8B-Instruct.
   That heterogeneity is invisible in a single aggregate number.''
 
   \textbf{[If asked: where does empirical Bayes / shrinkage come in?]}
-  The bars in this chart are \emph{shrunken} subject mean gaps --- BLUPs (Best Linear
-  Unbiased Predictors) from the mixed model, not raw subject averages.
-  Subjects have very different sample sizes (100 to 1,534 questions). A small subject
-  with 100 questions has much noisier estimates --- it could look extremely miscalibrated
-  just by chance. Empirical Bayes shrinkage corrects for this by pulling each subject's
-  estimate toward the grand mean (0.196), with more shrinkage for smaller subjects and
-  less for larger ones.
+  The bars in this chart are \emph{raw} subject mean gaps --- the simple average
+  of $\mathrm{gap}_i$ across all questions in each subject, not BLUPs.
 
-  The BLUP $\hat{v}_{jk}$ is the subject random effect from the REML fit. It is
-  already a shrunken estimate by construction --- REML estimates random effects by
-  shrinking them toward zero (i.e., toward the grand mean), with the degree of
-  shrinkage determined by the ICC and sample size. So the shrunken subject mean is
-  simply $\mu + \hat{v}_{jk}$: grand mean plus the shrunken subject deviation.
-  This is equivalent to a weighted average of the subject's own observed mean and
-  the grand mean --- you get it for free from the model fit, no separate step needed.
+  BLUPs (Best Linear Unbiased Predictors) --- the shrunken estimates $\mu + \hat{v}_{jk}$
+  from the REML fit --- are computed and reported in the paper as an alternative
+  summary, but the bar chart uses the raw means for transparency. The two are
+  numerically very close for large subjects; for small subjects (100 questions)
+  the BLUPs pull slightly toward the grand mean (0.196). The 13$\times$ range
+  in the chart is based on raw means: moral scenarios (0.487) and marketing (0.037).
 
   \textbf{What is the 13$\times$?} Simply the ratio of the largest to smallest mean gap:
   moral scenarios (0.487) divided by marketing (0.037) $\approx 13\times$.
