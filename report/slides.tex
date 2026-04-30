@@ -585,7 +585,7 @@ Llama-3-8B-Instruct.
       \textbf{57/57 subjects} rejected after BH correction ($\alpha = 0.05$).
 
       \vspace{0.5em}
-      {\small\color{mgray} Subject mean gap $> 0$: overconfident on average;\\
+      {\footnotesize\color{mgray} Subject mean gap $> 0$: overconfident on average;\\
       $< 0$: underconfident on average.}
 
       \vspace{0.5em}
@@ -597,7 +597,7 @@ Llama-3-8B-Instruct.
       \end{itemize}
 
       \vspace{0.8em}
-      {\color{mgray}\small Intercept $= 0.196$ ($p < 0.001$); overconfidence is a
+      {\color{mgray}\footnotesize Intercept $= 0.196$ ($p < 0.001$); overconfidence is a
       baseline effect of RLHF fine-tuning.}
     \end{column}
   \end{columns}
@@ -985,7 +985,7 @@ Llama-3-8B-Instruct.
 \begin{enumerate}
   \item \textbf{The unit of analysis is the subject, not the model.}
     Aggregate ECE hides a 13$\times$ range in miscalibration magnitude.
-    57/57 subjects rejected is the wrong headline --- the magnitude variation is what matters.
+    In addition to 57/57 subjects rejected, there is large magnitude of miscalibration variation.
 
   \vspace{0.4em}
   \item \textbf{Miscalibration is task-driven, so subject-level fixes are needed.}
