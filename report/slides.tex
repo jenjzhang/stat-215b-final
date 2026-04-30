@@ -197,8 +197,8 @@ Llama-3-8B-Instruct.
       uniformly overconfident --- when every bin has conf $>$ acc, ECE $\approx$
       mean gap. But they serve different roles: gap supports signed inference,
       ECE is the standard scalar for calibration comparison.
-    \item \textbf{Both models are fit separately.} The mixed model, BH tests,
-      and BLUPs are run independently for GPT-4o-mini and Llama-3-8B-Instruct.
+    \item \textbf{Both models are fit separately.} The mixed model and BH tests
+      are run independently for GPT-4o-mini and Llama-3-8B-Instruct.
       Results are shown side-by-side. The cross-model slide then compares their
       ECE subject rankings via Spearman $\rho$.
   \end{itemize}
@@ -366,8 +366,8 @@ Llama-3-8B-Instruct.
     \item $v_{jk}$: the subject random intercept --- how much subject $j$ within
       domain $k$ (e.g., abstract algebra within STEM) shifts the gap. This is the
       key term: its variance $\sigma^2_\text{subject}$ tells us how much subjects
-      systematically differ. The estimated $v_{jk}$ values are the BLUPs; the
-      bar chart plots raw subject mean gaps (numerically very close to BLUPs).
+      systematically differ. Its variance $\sigma^2_\text{subject}$ is the key output.
+      The bar chart plots raw subject mean gaps (simple averages of question-level gaps per subject).
     \item $\varepsilon_{ijk}$: question-level noise --- all the variation that cannot
       be explained by subject membership or measurable features. For GPT this is 92\%
       of total variance; for Llama, 98\%.
@@ -622,14 +622,11 @@ Llama-3-8B-Instruct.
 
   \textbf{[If asked: where does empirical Bayes / shrinkage come in?]}
   The bars in this chart are \emph{raw} subject mean gaps --- the simple average
-  of $\mathrm{gap}_i$ across all questions in each subject, not BLUPs.
-
-  BLUPs (Best Linear Unbiased Predictors) --- the shrunken estimates $\mu + \hat{v}_{jk}$
-  from the REML fit --- are computed and reported in the paper as an alternative
-  summary, but the bar chart uses the raw means for transparency. The two are
-  numerically very close for large subjects; for small subjects (100 questions)
-  the BLUPs pull slightly toward the grand mean (0.196). The 13$\times$ range
-  in the chart is based on raw means: moral scenarios (0.487) and marketing (0.037).
+  of $\mathrm{gap}_i$ across all questions in each subject.
+  BLUPs (shrunken REML estimates) are a natural next step but are not used in this analysis.
+  For subjects with 100+ questions the difference is small; shrinkage would mainly
+  affect small subjects by pulling their estimates toward the grand mean (0.196).
+  The 13$\times$ range is based on raw means: moral scenarios (0.487) and marketing (0.037).
 
   \textbf{What is the 13$\times$?} Simply the ratio of the largest to smallest mean gap:
   moral scenarios (0.487) divided by marketing (0.037) $\approx 13\times$.
@@ -699,10 +696,6 @@ Llama-3-8B-Instruct.
         \item Entropy marginally positive ($p = 0.069$) — same direction
       \end{itemize}
 
-      \vspace{0.5em}
-      \small\color{mgray}
-      Weaker predictor signal for Llama is consistent with lower ICC (2.0\%):
-      less between-subject structure $\Rightarrow$ less to predict.
     \end{column}
   \end{columns}
 \end{frame}
@@ -719,9 +712,20 @@ Llama-3-8B-Instruct.
   hedging; it's miscalibrated even in its expression of uncertainty.''
 
   Then contrast with Llama: ``Llama shows no significant predictors. The trend
-  for entropy is in the same direction but doesn't reach significance. This is
-  consistent with Llama having less between-subject structure overall — there's
-  simply less systematic variance to explain.''
+  for entropy is in the same direction but doesn't reach significance.
+
+  Why? The fixed effects gain predictive power partly by correlating with subject
+  identity. For GPT, subjects differ substantially in their baseline gap (ICC = 7.9\%),
+  and harder subjects like abstract algebra also happen to have longer, more complex
+  questions. So word count is effectively a noisy proxy for subject identity, and
+  subject identity carries real signal.
+
+  For Llama, subjects barely differ from each other (ICC = 2.0\%) --- the
+  between-subject lever is largely absent. Even if word count still correlates
+  with which subject a question comes from, there is almost no between-subject
+  gap variation for it to exploit. Combined with larger residual noise
+  ($\sigma^2_\varepsilon = 0.190$ vs.\ $0.150$), the same predictors face a
+  worse signal-to-noise ratio and don't reach significance.''
 
   \textbf{[If asked: why do GPT and Llama differ in fixed effect significance?]}
   GPT's ICC is 7.9\% --- its miscalibration is organized by subject, concentrating
@@ -895,11 +899,11 @@ Llama-3-8B-Instruct.
 
 \begin{frame}{Sensitivity analysis: are findings robust?}
 
-\textbf{Three stress tests — run on both models.}
+\textbf{Two stress tests — run on both models.}
 
 \vspace{0.6em}
 \begin{columns}[T]
-  \begin{column}{0.32\textwidth}
+  \begin{column}{0.48\textwidth}
     \textbf{1. ECE binning \& NLCS}\\[0.4em]
     \small
     $b \in \{10, 15, 20, 25, 30\}$ bins.\\[0.3em]
@@ -908,7 +912,7 @@ Llama-3-8B-Instruct.
     vs.\ unbinned NLCS: $\rho \geq 0.861$\\[0.3em]
     \textbf{Rankings stable.}
   \end{column}
-  \begin{column}{0.32\textwidth}
+  \begin{column}{0.48\textwidth}
     \textbf{2. FDR threshold}\\[0.4em]
     \small
     BH at $\alpha \in \{0.01, 0.05, 0.10\}$.\\[0.3em]
@@ -916,21 +920,12 @@ Llama-3-8B-Instruct.
     Llama: 55/57/57 rejected\\[0.3em]
     \textbf{Not driven by $\alpha$.}
   \end{column}
-  \begin{column}{0.32\textwidth}
-    \textbf{3. Model structure}\\[0.4em]
-    \small
-    3-level vs.\ 2-level model.\\[0.3em]
-    GPT: ICC$_\text{subj}=0.079$\\
-    Llama: ICC$_\text{subj}=0.020$\\
-    (identical in both specs)\\[0.3em]
-    \textbf{ICC robust.}
-  \end{column}
 \end{columns}
 \end{frame}
 \note{
   \textbf{[~45 sec]}
 
-  Frame briefly: ``Before trusting these results, I stress-tested the three main
+  Frame briefly: ``Before trusting these results, I stress-tested two key
   modeling choices across both models.''
 
   Column 1: ``We vary the number of confidence bins used to compute ECE ---
@@ -968,15 +963,6 @@ Llama-3-8B-Instruct.
   robustness, but the interesting result remains the 13$\times$ magnitude range,
   not the binary rejection count.
 
-  Column 3: ``The two-level and three-level models give identical ICC estimates ---
-  but be honest about why: domain variance is already estimated at zero in the
-  three-level model, so dropping the domain level is numerically a no-op.
-  This is not an independent validation. The useful interpretation is narrower:
-  the three-level model is not artificially inflating subject-level ICC by
-  misattributing domain variance to subjects. Since domain variance = 0, the
-  subject ICC of 7.9\% (GPT) is not contaminated by a spurious domain effect.
-  The stronger robustness evidence is columns 1 and 2.''
-
   \textbf{[If asked: why Spearman specifically for the bin sensitivity check?]}
   Our conclusions rest on subject \emph{rankings}, not absolute ECE values:
   the top-5 miscalibrated subjects are selected by rank, and the cross-model
@@ -1012,7 +998,7 @@ Llama-3-8B-Instruct.
 
   \vspace{0.4em}
   \item \textbf{The audit framework generalizes.}
-    Multilevel model + BH correction + shrinkage applies to any benchmark with
+    Multilevel model + BH correction applies to any benchmark with
     a hierarchical structure --- a reusable tool for honest calibration evaluation.
 
   \vspace{0.4em}
@@ -1055,5 +1041,22 @@ comparison; extend to open-ended generation.
 
   Leave ~30 sec for questions.
 }
+
+%% ── Thank You ──────────────────────────────────────────────────────────────
+\begin{frame}[plain]
+  \vfill
+  \begin{center}
+    {\Large \textbf{Thank You}}\\[1.2em]
+    {\normalsize Questions?}\\[2em]
+    {\small
+      \begin{tabular}{rl}
+        Code \& data: & \texttt{github.com/jzhang/llm-calibration-audit}\\
+        Contact:      & jennifer7546@gmail.com
+      \end{tabular}
+    }
+  \end{center}
+  \vfill
+\end{frame}
+\note{}
 
 \end{document}
