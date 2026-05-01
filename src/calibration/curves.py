@@ -20,7 +20,7 @@ from scipy.ndimage import gaussian_filter1d
 
 IN = Path("data/processed")
 OUT = Path("data/processed")
-MODELS = ["gpt4o", "llama"]
+MODELS = ["gpt4o", "llama", "qwen_1_5b", "qwen_7b"]
 N_BINS = 20
 
 

@@ -75,5 +75,5 @@ def run(model: str):
 
 
 if __name__ == "__main__":
-    for m in ["gpt4o", "llama"]:
+    for m in ["gpt4o", "llama", "qwen_1_5b", "qwen_7b"]:
         run(m)
