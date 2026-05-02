@@ -1,0 +1,7 @@
+% Minimal forloop.sty stub for icml2026.sty compatibility
+\ProvidesPackage{forloop}[2009/09/09 forloop]
+\RequirePackage{ifthen}
+\newcommand{\forloop}[5][1]{%
+  \setcounter{#2}{#3}%
+  \whiledo{#4}{#5\addtocounter{#2}{#1}}%
+}

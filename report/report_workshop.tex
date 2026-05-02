@@ -1,19 +1,43 @@
-\documentclass[11pt]{article}
-\usepackage[margin=1in]{geometry}
-\usepackage{amsmath, amssymb, amsthm}
-\usepackage{booktabs}
-\usepackage{graphicx}
-\usepackage{hyperref}
-\usepackage{natbib}
+\documentclass{article}
+
 \usepackage{microtype}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+
+\newcommand{\theHalgorithm}{\arabic{algorithm}}
+
+% Blind submission mode (author info stripped automatically)
+\usepackage{icml2026}
+
+\usepackage{amsmath, amssymb, amsthm}
 \usepackage{xcolor}
 
-\title{Subject-Level Calibration Heterogeneity is Stable\\Across LLM Families and Scales:\\A Statistical Audit of MMLU}
-\author{Jennifer Zhang \and John Wright}
-\date{Spring 2026}
+% Basic TeX installation lacks Courier metrics; fall back to CM teletype
+\renewcommand{\ttdefault}{cmtt}
+
+\icmltitlerunning{Subject-Level Calibration Heterogeneity Across LLM Families and Scales}
 
 \begin{document}
-\maketitle
+
+\twocolumn[
+  \icmltitle{Subject-Level Calibration Heterogeneity is Stable\\
+    Across LLM Families and Scales: A Statistical Audit of MMLU}
+
+  % Author information is automatically hidden in blind-review mode.
+  \begin{icmlauthorlist}
+    \icmlauthor{Anonymous Author 1}{anon}
+    \icmlauthor{Anonymous Author 2}{anon}
+  \end{icmlauthorlist}
+
+  \icmlaffiliation{anon}{Anonymous Institution}
+
+  \icmlkeywords{calibration, large language models, MMLU, multilevel models, trustworthy AI}
+
+  \vskip 0.3in
+]
+
+\printAffiliationsAndNotice{}
 
 \begin{abstract}
 Aggregate calibration metrics for large language models (LLMs) hide structured
@@ -66,6 +90,16 @@ subject-aware temperature scaling improves on global recalibration; we ask
 whether the structural assumption underlying that scoping decision (that
 miscalibration patterns are stable enough to be worth scoping over) is
 empirically justified.
+
+Prior work has studied LLM calibration mostly at the aggregate level.
+\citet{kadavath2022language} showed that token-level logprobs carry a meaningful
+calibration signal on multiple-choice tasks and that instruction tuning tends to
+degrade it; \citet{xiong2024can} noted calibration degrades on tasks requiring
+professional knowledge but did not investigate subject-level structure formally.
+\citet{nakkiran2025trained} and \citet{yaldiz2026balancing} document
+RLHF-induced confidence saturation at the aggregate level. We bring a formal
+statistical audit to the within-benchmark heterogeneity these works describe only
+in passing.
 
 % ============================================================
 \section{Method}
@@ -176,7 +210,7 @@ heterogeneity that aggregate ECE conceals: in a single model on a single
 benchmark, some subjects sit on the calibration diagonal while others fall
 sharply below it.
 
-\begin{figure}[h]
+\begin{figure*}[t]
   \centering
   \includegraphics[width=\textwidth]{figures/top5_most_miscalibrated_gpt4o_4m.pdf}
   \vspace{0.5em}
@@ -187,7 +221,7 @@ sharply below it.
   observed support; markers are 20-bin empirical accuracy sized by bin count;
   dashed line is the calibration diagonal.}
   \label{fig:reliability}
-\end{figure}
+\end{figure*}
 
 \subsection{Cross-model agreement (RQ2)}
 
@@ -206,7 +240,7 @@ $[0.76, 0.90]$.
 
 \begin{figure}[h]
   \centering
-  \includegraphics[width=0.55\textwidth]{figures/cross_model_heatmap_4m.pdf}
+  \includegraphics[width=\columnwidth]{figures/cross_model_heatmap_4m.pdf}
   \caption{Spearman rank correlation matrix of subject-level ECE across the
   four models (57 common subjects). All pairwise correlations are between
   0.78 and 0.92.}
@@ -230,16 +264,25 @@ $^\dagger p<0.10$.}
 \label{tab:fixef}
 \begin{tabular}{lrrrr}
 \toprule
-Predictor & GPT-4o-mini & Llama-Instruct & Qwen-1.5B-Instruct & Qwen-7B-Instruct \\
+Predictor & GPT & Llama & Q-1.5B & Q-7B \\
 \midrule
 Intercept         &  0.196$^{***}$ &  0.197$^{***}$ &  0.157$^{***}$ &  0.233$^{***}$ \\
 Word count        &  0.031$^{***}$ & -0.005          &  0.004          &  0.019$^{**}$  \\
-Max option length &  0.001          & -0.001          & -0.002          & -0.007          \\
+Max option len.   &  0.001          & -0.001          & -0.002          & -0.007          \\
 Negation          & -0.001          &  0.007          & -0.010          & -0.001          \\
 Entropy           &  0.016$^{***}$ &  0.008$^\dagger$ & -0.010$^{*}$    &  0.029$^{***}$ \\
 \bottomrule
 \end{tabular}
 \end{table}
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=\columnwidth]{figures/coef_plot_4m.pdf}
+  \caption{Fixed effect estimates with 95\% confidence intervals across the four
+  models. The entropy sign flip (negative for Qwen-1.5B, positive for the other
+  three) is the most informative pattern.}
+  \label{fig:coef}
+\end{figure}
 
 \paragraph{Entropy: a sign flip across capability.}
 The most informative predictor is entropy. A naïve prediction is that high
@@ -254,7 +297,7 @@ confidence falls slower than accuracy as entropy rises, widening the gap;
 Qwen-1.5B is the only model where the two fall in parallel, exactly the
 reason its entropy coefficient is negative.
 
-\begin{figure}[h]
+\begin{figure*}[t]
   \centering
   \includegraphics[width=\textwidth]{figures/entropy_mechanism_4m.pdf}
   \caption{Confidence (solid) and accuracy (dashed) by entropy quartile per
@@ -262,7 +305,7 @@ reason its entropy coefficient is negative.
   confidence falling more slowly than accuracy as entropy rises; only
   Qwen-1.5B shows the two falling in parallel.}
   \label{fig:entropy}
-\end{figure}
+\end{figure*}
 
 This pattern aligns with prior aggregate findings on RLHF and confidence
 \citep{kadavath2022language, nakkiran2025trained, yaldiz2026balancing}---more
@@ -285,6 +328,20 @@ to reject for Qwen-1.5B are
 robust well-calibrated set. The substantive finding is the magnitude of
 heterogeneity: per-model gap ranges span 6.2--13.9$\times$ from the
 best-calibrated to the worst-calibrated subject.
+
+Figure~\ref{fig:meangap} shows all 57 subjects sorted by mean calibration gap
+for GPT-4o-mini, with FDR-rejected subjects highlighted. The key takeaway is the
+magnitude of heterogeneity: gap ranges span 6.2--13.9$\times$ from the
+best-calibrated to the worst-calibrated subject across models.
+
+\begin{figure*}[t]
+  \centering
+  \includegraphics[width=\textwidth]{figures/subject_mean_gap_4m.pdf}
+  \caption{Mean calibration gap per subject, sorted ascending, for all four
+  models. Red bars are FDR-rejected at $\alpha=0.05$; gray bars are not. Three
+  of four models reject all 57 subjects; Qwen-1.5B rejects 54 of 57.}
+  \label{fig:meangap}
+\end{figure*}
 
 Sensitivity-analysis conclusions extend uniformly: ECE rankings are stable
 across bin counts (Spearman $\geq 0.97$ vs.\ 20-bin baseline), proper-scoring
@@ -338,7 +395,22 @@ whether the high-school vs.\ college calibration gap persists at higher
 difficulty.
 
 % ============================================================
-\bibliographystyle{plainnat}
+\section{Conclusion}
+% ============================================================
+
+Subject-level calibration heterogeneity in LLMs is real, large, and stable.
+Applied/factual high-school subjects are reliably well-calibrated across all
+models we examined; college-level technical content, niche factual recall, and
+structured ethical/legal reasoning are reliably poorly calibrated. Subject-level
+ECE rankings are highly correlated across all six model pairs
+($\rho \in [0.78, 0.92]$), including cross-family pairs at matched capability,
+establishing these patterns as properties of the task rather than any particular
+training pipeline. The audit supplies the structural justification for
+subject-aware recalibration scoping and a transferable diagnostic for flagging
+miscalibration on new models before deployment.
+
+% ============================================================
+\bibliographystyle{icml2026}
 \bibliography{references}
 % ============================================================
 
