@@ -40,9 +40,10 @@
 \printAffiliationsAndNotice{}
 
 \begin{abstract}
-Aggregate calibration metrics for large language models (LLMs) hide structured
-heterogeneity in where they are well- and poorly-calibrated. We develop a
-statistical audit framework---a multilevel decomposition of question-level
+Aggregate calibration metrics obscure a critical risk: LLMs are most
+overconfident in the specialized domains---legal reasoning, medical science,
+technical STEM---where users are least equipped to catch errors independently.
+We develop a statistical audit framework---a multilevel decomposition of question-level
 calibration gap variance, isotonic reliability curves per subject, empirical
 Bayes shrinkage, and Benjamini--Hochberg FDR correction---and apply it to MMLU
 across four instruction-tuned models from two families and three parameter
@@ -69,11 +70,18 @@ itself supplies a transferable diagnostic for new models.
 \section{Introduction}
 % ============================================================
 
-LLMs deployed in high-stakes settings need calibrated confidence as much as
-they need accuracy. Most of the calibration literature reports a single
-aggregate scalar---ECE \citep{guo2017calibration}, NLL, or related---which is
-informative about how much miscalibration there is on average but tells us
-nothing about where it concentrates. We ask three questions:
+When users consult an LLM for legal guidance, medical information, or technical
+scientific questions, they typically lack the domain expertise to evaluate the
+answer independently---placing full weight on the model's expressed confidence
+as a reliability signal. Systematic overconfidence in these domains therefore
+creates a predictable, population-scale harm: users acting on high-confidence
+wrong answers have no reliable way to detect the error. Our findings make this
+concrete: across four models from two families, the most severely miscalibrated
+subjects are stably the professional and technical domains---\texttt{professional\_law},
+\texttt{virology}, \texttt{college\_chemistry}---precisely where reliable
+confidence signals matter most. Yet the standard calibration literature reports
+only aggregate scalars---ECE~\citep{guo2017calibration}, NLL, or related---that
+are silent about where miscalibration concentrates. We ask three questions:
 
 \begin{enumerate}
   \item \textbf{Where is calibration good and bad within a benchmark?}
@@ -373,6 +381,18 @@ appropriate choice. The audit findings also provide a transferable diagnostic:
 the robustly worst-calibrated subjects we identify can flag miscalibration on
 new models before deployment.
 
+\paragraph{The audit as an accountability instrument.}
+The cross-model stability of our findings has a direct governance implication:
+because subject-level miscalibration patterns are consistent across model
+families, the audit protocol is transferable without re-establishing baseline
+comparisons. The robustly worst-calibrated subjects---\texttt{professional\_law},
+\texttt{virology}, \texttt{college\_chemistry}, \texttt{moral\_scenarios}---constitute
+a natural adversarial test set for pre-deployment evaluation in high-stakes
+contexts. Deployers and regulators can apply this protocol as a targeted
+accountability checkpoint, surfacing structured overconfidence risks that
+aggregate ECE would not reveal and that model cards reporting only top-line
+metrics would obscure.
+
 \paragraph{Limitations.}
 The within-family scale comparison rests on two checkpoints (Qwen-1.5B and
 Qwen-7B); the entropy-coefficient sign flip rests on Qwen-1.5B alone.
@@ -405,9 +425,10 @@ structured ethical/legal reasoning are reliably poorly calibrated. Subject-level
 ECE rankings are highly correlated across all six model pairs
 ($\rho \in [0.78, 0.92]$), including cross-family pairs at matched capability,
 establishing these patterns as properties of the task rather than any particular
-training pipeline. The audit supplies the structural justification for
-subject-aware recalibration scoping and a transferable diagnostic for flagging
-miscalibration on new models before deployment.
+training pipeline. The audit supplies the structural justification for subject-aware recalibration
+scoping, a transferable pre-deployment diagnostic for new models, and a concrete
+accountability instrument for AI deployment in the legal, medical, and scientific
+domains where calibration failures carry the greatest societal cost.
 
 % ============================================================
 \bibliographystyle{icml2026}
