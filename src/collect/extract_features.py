@@ -64,6 +64,7 @@ def main():
         ("qwen_0_5b", "qwen25_0_5b_instruct_responses.parquet"),
         ("qwen_1_5b", "qwen25_1_5b_instruct_responses.parquet"),
         ("qwen_1_5b_fp16", "qwen25_1_5b_instruct_fp16_responses.parquet"),
+        ("qwen_3b", "qwen25_3b_instruct_responses.parquet"),
         ("qwen_7b", "qwen25_7b_instruct_responses.parquet"),
         ("qwen_14b", "qwen25_14b_instruct_responses.parquet"),
     ]:

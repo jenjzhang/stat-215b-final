@@ -20,26 +20,30 @@ Large language model (LLM) calibration is nearly always reported as a single
 aggregate scalar, obscuring whether miscalibration is diffuse or concentrated
 in specific knowledge domains. We develop a statistically rigorous audit
 framework and apply it to MMLU \citep{hendrycks2021measuring} using token-level
-log probabilities from six instruction-tuned models spanning two families and
-five parameter scales: GPT-4o-mini, Llama-3-8B-Instruct, and
-Qwen-2.5-\{0.5B, 1.5B, 7B, 14B\}-Instruct. Our framework combines a three-level
+log probabilities from seven instruction-tuned models spanning two families and
+six parameter scales: GPT-4o-mini, Llama-3-8B-Instruct, and
+Qwen-2.5-\{0.5B, 1.5B, 3B, 7B, 14B\}-Instruct. Our framework combines a three-level
 mixed-effects model, isotonic and kernel-smoothed reliability curves, empirical
-Bayes shrinkage, and Benjamini--Hochberg FDR correction. Across the six models,
+Bayes shrinkage, and Benjamini--Hochberg FDR correction. Across the seven models,
 between-subject calibration variance accounts for 1.7--7.9\% of the total, and
 55--57 of 57 subjects are flagged as significantly miscalibrated at FDR
-$\alpha=0.05$. Subject-level ECE rankings are highly correlated for the five
-larger models (Spearman $\rho \in [0.78, 0.94]$, all pairs); the smallest model
-(Qwen-2.5-0.5B) shows extreme positional bias (predicting D 59\% of the time)
-that produces a qualitatively different miscalibration pattern uncorrelated with
-the others. The same subjects are robustly worst-calibrated across the larger
-models (college-level quantitative STEM, niche factual recall, structured
+$\alpha=0.05$. Subject-level ECE rankings are highly correlated for the six
+larger models (Spearman $\rho \in [0.79, 0.94]$, all 15 pairs); the smallest
+model (Qwen-2.5-0.5B) shows extreme positional bias (predicting D 59\% of the
+time) that produces a qualitatively different miscalibration pattern uncorrelated
+with the others. The same subjects are robustly worst-calibrated across the
+larger models (college-level quantitative STEM, niche factual recall, structured
 ethical/legal reasoning) and the same subjects are robustly best-calibrated
 (high-school-level Social Sciences and applied/factual subjects). Within the
-Qwen family across three matched-precision scale points (1.5B/7B/14B), both the
-between-subject ICC and the entropy coefficient grow monotonically with scale
-($0.017 \to 0.049 \to 0.059$ and $-0.004 \to +0.029 \to +0.040$ respectively),
-a marginal pattern consistent with prior aggregate findings on RLHF-induced
-confidence saturation \citep{kadavath2022language, nakkiran2025trained}.
+Qwen family across four matched-precision scale points (1.5B/3B/7B/14B),
+the entropy coefficient grows log-linearly with scale ($-0.004 \to +0.006
+\to +0.029 \to +0.040$), and between-subject ICC grows substantially from 1.5B
+to 3B (0.017 $\to$ 0.051) and remains elevated at the larger scales
+(0.049 at 7B, 0.059 at 14B). The mean-overconfidence intercept is non-monotonic,
+peaking at Qwen-3B (0.311) where strong confidence priors have been acquired
+ahead of capability gains, and declining at 7B and 14B as accuracy catches up.
+This is a marginal pattern consistent with prior aggregate findings on
+RLHF-induced confidence saturation \citep{kadavath2022language, nakkiran2025trained}.
 \end{abstract}
 
 % ============================================================
@@ -95,10 +99,10 @@ Our central scientific questions, restated:
     FDR-corrected subject rankings, and a within-MMLU contrast between
     well-calibrated and poorly-calibrated subject clusters.
   \item \textbf{How consistent} is the answer across models? Pairwise
-    Spearman correlations of subject-level ECE across six models.
+    Spearman correlations of subject-level ECE across seven models.
   \item \textbf{What mechanisms} produce the observed heterogeneity? Question-
-    level predictors, plus a within-Qwen scaling sweep across three matched-
-    precision checkpoints (1.5B, 7B, 14B).
+    level predictors, plus a within-Qwen scaling sweep across four matched-
+    precision checkpoints (1.5B, 3B, 7B, 14B).
 \end{enumerate}
 
 % ============================================================
@@ -147,25 +151,26 @@ hierarchy---questions $\to$ subjects $\to$ domains---is natural for the proposed
 analysis. We use the test split throughout.
 
 \paragraph{Models.}
-We query six instruction-tuned models spanning two families and five parameter
+We query seven instruction-tuned models spanning two families and six parameter
 scales. \textbf{GPT-4o-mini} is queried via the OpenAI Batch API at temperature
 0 (\texttt{max\_tokens=1}, \texttt{top\_logprobs=20}); the choice of 20 (rather
 than the API default of 5) ensures all four answer tokens are captured for
 virtually every question. \textbf{Llama-3-8B-Instruct} and \textbf{Qwen-2.5
-\{0.5B, 1.5B, 7B, 14B\}-Instruct} are run locally on a Colab GPU. The 7B, 8B,
-and 14B models use 4-bit quantization (BitsAndBytes; \citealt{dettmers2022gptint});
-the 0.5B model uses 4-bit and the 1.5B model is run twice (once at 4-bit, once
-at fp16) so the precision effect can be examined directly.\footnote{The fp16
-1.5B run was added after we observed that the 4-bit 1.5B run had unusual
-positional bias (predictions skewed toward B at 36\%) and accuracy 0.054 below
-the published full-precision figure. The fp16 run brought both numbers in line
-with the published figures and is used as the canonical 1.5B in the main
-analysis. The 4-bit version is preserved for the precision-effect appendix.}
-For all six models we pre-fill the assistant turn with ``The answer is'' before
-extracting logprobs at the next-token position. Test-set accuracies are 0.749
-(GPT-4o-mini), 0.606 (Llama), 0.405 (Qwen-0.5B), 0.571 (Qwen-1.5B fp16), 0.685
-(Qwen-7B), 0.757 (Qwen-14B). Qwen-0.5B exhibits extreme positional bias
-(predicting D 59\% of the time vs. A 5.6\%), discussed where it affects results.
+\{0.5B, 1.5B, 3B, 7B, 14B\}-Instruct} are run locally on a Colab GPU. The 3B,
+7B, 8B, and 14B models use 4-bit quantization (BitsAndBytes;
+\citealt{dettmers2022gptint}); the 0.5B model also uses 4-bit, and the 1.5B
+model is run twice (once at 4-bit, once at fp16) so the precision effect can be
+examined directly.\footnote{The fp16 1.5B run was added after we observed that
+the 4-bit 1.5B run had unusual positional bias (predictions skewed toward B at
+36\%) and accuracy 0.054 below the published full-precision figure. The fp16
+run brought both numbers in line with the published figures and is used as the
+canonical 1.5B in the main analysis. The 4-bit version is preserved for the
+precision-effect appendix.} For all seven models we pre-fill the assistant turn
+with ``The answer is'' before extracting logprobs at the next-token position.
+Test-set accuracies are 0.749 (GPT-4o-mini), 0.606 (Llama), 0.405 (Qwen-0.5B),
+0.571 (Qwen-1.5B fp16), 0.601 (Qwen-3B), 0.685 (Qwen-7B), 0.757 (Qwen-14B).
+Qwen-0.5B exhibits extreme positional bias (predicting D 59\% of the time vs.
+A 5.6\%), discussed where it affects results.
 
 % ============================================================
 \section{Methods}
@@ -264,10 +269,10 @@ where miscalibration is statistically established rather than just descriptively
 
 \subsection{Cross-Model Replication}
 
-The full pipeline is run on each of the six models. Subjects flagged as
+The full pipeline is run on each of the seven models. Subjects flagged as
 miscalibrated by multiple models suggest task-driven miscalibration reflecting
 question structure; subjects that diverge suggest model-specific effects of
-training. We compare subject-level ECE rankings across all 15 model pairs using
+training. We compare subject-level ECE rankings across all 21 model pairs using
 Spearman rank correlation with bootstrap confidence intervals (2000 replicates,
 seed 42).
 
@@ -278,11 +283,12 @@ seed 42).
 \subsection{Variance Decomposition (RQ1)}
 
 Table~\ref{tab:icc} reports the ICC decomposition from the three-level mixed
-model for the six main models. Across all six, the bulk of calibration-gap
+model for the seven main models. Across all seven, the bulk of calibration-gap
 variance lies at the question level (92.1--98.3\%), and domain-level variance
-collapses to zero. Between-subject ICCs span nearly a factor of five: GPT-4o-mini
-concentrates 7.9\% of variance at the subject level, Qwen-14B 5.9\%, Qwen-7B
-4.9\%, and Llama and the smaller Qwen models cluster around 1.7--2.0\%.
+collapses to zero. Between-subject ICCs span nearly a factor of five:
+GPT-4o-mini concentrates 7.9\% of variance at the subject level, Qwen-14B 5.9\%,
+Qwen-3B 5.1\%, Qwen-7B 4.9\%, and Llama and the smaller Qwen models cluster
+around 1.7--2.0\%.
 
 \begin{table}[h]
 \centering
@@ -298,17 +304,21 @@ GPT-4o-mini             & 0.000 & 0.013 & 0.150 & 0.079 \\
 Llama-3-8B-Instruct     & 0.000 & 0.004 & 0.190 & 0.020 \\
 Qwen-2.5-0.5B-Instruct  & 0.000 & 0.004 & 0.224 & 0.018 \\
 Qwen-2.5-1.5B-Instruct  & 0.000 & 0.003 & 0.197 & 0.017 \\
+Qwen-2.5-3B-Instruct    & 0.000 & 0.011 & 0.203 & 0.051 \\
 Qwen-2.5-7B-Instruct    & 0.000 & 0.009 & 0.177 & 0.049 \\
 Qwen-2.5-14B-Instruct   & 0.000 & 0.010 & 0.156 & 0.059 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-The within-Qwen scaling pair (1.5B $\to$ 7B $\to$ 14B, all matched at the
-fp16/4-bit precision boundary used per model) shows ICC growing monotonically
-($0.017 \to 0.049 \to 0.059$). Combined with the parallel monotonic increase in
-the entropy coefficient (Section~\ref{sec:predictors}), this is the cleanest
-within-family scaling signal in our data.
+The within-Qwen scaling sweep across four matched-precision checkpoints
+(1.5B fp16, 3B 4-bit, 7B 4-bit, 14B 4-bit) shows ICC making a substantial
+jump from 1.5B to 3B (0.017 $\to$ 0.051) and remaining elevated at the larger
+scales (0.049 at 7B, 0.059 at 14B). The discontinuity around 1.5B$\to$3B
+suggests that subject-level concentration of miscalibration emerges around
+2--3B parameters, then increases gradually; combined with the parallel
+monotonic increase in the entropy coefficient (Section~\ref{sec:predictors}),
+this is the cleanest within-family scaling signal in our data.
 
 The domain-level variance is estimated at zero for every model. With only four
 domain groups, the likelihood is flat with respect to the domain variance
@@ -329,7 +339,7 @@ sharply.
 
 \begin{figure}[h]
   \centering
-  \includegraphics[width=\textwidth]{figures/top5_most_miscalibrated_gpt4o_6m.pdf}
+  \includegraphics[width=\textwidth]{figures/top5_most_miscalibrated_gpt4o_7m.pdf}
   \caption{GPT-4o-mini reliability curves for the five most miscalibrated subjects
   by ECE. Solid line: isotonic regression fit, plotted only over the observed
   confidence range (1st--99th percentile per subject). Markers: empirical accuracy
@@ -345,7 +355,7 @@ same evaluation, illustrating the heterogeneity that aggregate ECE conceals.
 
 \begin{figure}[h]
   \centering
-  \includegraphics[width=\textwidth]{figures/bottom5_best_calibrated_gpt4o_6m.pdf}
+  \includegraphics[width=\textwidth]{figures/bottom5_best_calibrated_gpt4o_7m.pdf}
   \caption{GPT-4o-mini reliability curves for the five \emph{best}-calibrated
   subjects, shown for visual contrast with Figure~\ref{fig:top5}. Same conventions.}
   \label{fig:bottom5}
@@ -355,41 +365,42 @@ same evaluation, illustrating the heterogeneity that aggregate ECE conceals.
 \label{sec:predictors}
 
 Table~\ref{tab:fixef} reports the fixed effects from the multilevel model
-across the six main models. Intercepts confirm large mean overconfidence
-in every model (0.179--0.233), with no monotonic relationship to scale: the
-Qwen intercept rises 1.5B$\to$7B (0.179$\to$0.233) but drops slightly at 14B
-(0.210). Higher accuracy at 14B (0.757 vs.\ 0.685 at 7B) narrows the gap even as
-the underlying confidence pattern grows more concentrated, and the two effects
-partially cancel.
+across the seven main models. Intercepts confirm large mean overconfidence in
+every model (0.179--0.311). Within the Qwen family, the intercept is
+\emph{non-monotonic} in scale: it rises sharply from 1.5B (0.179) to 3B (0.311),
+then declines back at 7B (0.233) and 14B (0.210). Mean accuracy is monotonic
+(0.571 $\to$ 0.601 $\to$ 0.685 $\to$ 0.757), so the inverted-U intercept
+reflects the confidence outpacing accuracy at intermediate scale, then
+accuracy catching up at larger scales.
 
 \begin{table}[h]
 \centering
 \small
-\caption{Fixed effects from the three-level mixed model for all six models.
+\caption{Fixed effects from the three-level mixed model for all seven models.
 Continuous covariates standardized. Significance: $^{***}p<0.001$,
 $^{**}p<0.01$, $^*p<0.05$, $^\dagger p<0.10$.}
 \label{tab:fixef}
-\begin{tabular}{lrrrrrr}
+\begin{tabular}{lrrrrrrr}
 \toprule
-Predictor & GPT-4o-mini & Llama-Instruct & Q-0.5B & Q-1.5B & Q-7B & Q-14B \\
+Predictor & GPT & Llama & Q-0.5B & Q-1.5B & Q-3B & Q-7B & Q-14B \\
 \midrule
-Intercept         &  0.196$^{***}$ &  0.197$^{***}$ &  0.209$^{***}$ &  0.179$^{***}$ &  0.233$^{***}$ &  0.210$^{***}$ \\
-Word count        &  0.031$^{***}$ & -0.005          & -0.013$^*$      &  0.003          &  0.019$^{**}$  &  0.023$^{***}$ \\
-Max option length &  0.001          & -0.001          & -0.028$^{***}$ &  0.005          & -0.007          & -0.007          \\
-Negation          & -0.001          &  0.007          &  0.016          & -0.010          & -0.001          &  0.005          \\
-Entropy           &  0.016$^{***}$ &  0.008$^\dagger$ & -0.063$^{***}$ & -0.004          &  0.029$^{***}$ &  0.040$^{***}$ \\
+Intercept         &  0.196$^{***}$ &  0.197$^{***}$ &  0.209$^{***}$ &  0.179$^{***}$ &  0.311$^{***}$ &  0.233$^{***}$ &  0.210$^{***}$ \\
+Word count        &  0.031$^{***}$ & -0.005          & -0.013$^*$      &  0.003          &  0.010          &  0.019$^{**}$  &  0.023$^{***}$ \\
+Max option length &  0.001          & -0.001          & -0.028$^{***}$ &  0.005          & -0.008$^\dagger$& -0.007          & -0.007          \\
+Negation          & -0.001          &  0.007          &  0.016          & -0.010          & -0.014          & -0.001          &  0.005          \\
+Entropy           &  0.016$^{***}$ &  0.008$^\dagger$ & -0.063$^{***}$ & -0.004          &  0.006          &  0.029$^{***}$ &  0.040$^{***}$ \\
 \bottomrule
 \end{tabular}
 \end{table}
 
 Figure~\ref{fig:coef} shows the corresponding forest plot. Word count is a
-positive significant predictor for GPT-4o-mini and the larger Qwens
-(7B, 14B), inert for Llama and the small Qwens (0.5B, 1.5B). The most
-informative pattern is the entropy coefficient.
+positive significant predictor for GPT-4o-mini and the larger Qwens (7B, 14B),
+inert for Llama and the small Qwens (0.5B, 1.5B, 3B). The most informative
+pattern is the entropy coefficient.
 
 \begin{figure}[h]
   \centering
-  \includegraphics[width=\textwidth]{figures/coef_plot_6m.pdf}
+  \includegraphics[width=\textwidth]{figures/coef_plot_7m.pdf}
   \caption{Fixed effect estimates with 95\% confidence intervals for all six
   models. Estimates are on the standardized calibration gap scale. The entropy
   coefficient shows a striking sign progression across the Qwen scaling sweep.}
@@ -401,17 +412,18 @@ A naïve prediction is that high option-distribution entropy reduces the
 calibration gap, since top-1 confidence is mechanically lower when probability
 mass spreads across options. Yet the entropy coefficient varies systematically
 across models and scales: strongly negative for Qwen-0.5B ($-0.063$, $p<0.001$),
-near-zero for Qwen-1.5B ($-0.004$, n.s.), and positive and growing across larger
-models (Llama $+0.008$, GPT-4o-mini $+0.016$, Qwen-7B $+0.029$, Qwen-14B $+0.040$,
-all $p < 0.10$ or smaller). Within the Qwen family at matched precision (1.5B fp16,
-7B 4-bit, 14B 4-bit), the coefficient grows monotonically: $-0.004 \to +0.029
-\to +0.040$. Figure~\ref{fig:entropy} traces the mechanism. Within each model we
-partition questions into entropy quartiles and report mean confidence (solid)
+near-zero for Qwen-1.5B and Qwen-3B ($-0.004$ and $+0.006$, both n.s.), and
+positive and growing across larger models (Llama $+0.008$, GPT-4o-mini $+0.016$,
+Qwen-7B $+0.029$, Qwen-14B $+0.040$, all $p < 0.10$ or smaller). Within the
+Qwen family at matched precision (1.5B fp16, 3B, 7B, 14B), the coefficient
+grows log-linearly across all four scale points: $-0.004 \to +0.006 \to +0.029
+\to +0.040$. Figure~\ref{fig:entropy} traces the mechanism. Within each model
+we partition questions into entropy quartiles and report mean confidence (solid)
 and mean accuracy (dashed); the shaded area is the calibration gap.
 
 \begin{figure}[h]
   \centering
-  \includegraphics[width=\textwidth]{figures/entropy_mechanism_6m.pdf}
+  \includegraphics[width=\textwidth]{figures/entropy_mechanism_7m.pdf}
   \caption{Confidence (solid) and accuracy (dashed) by entropy quartile per
   model, with the shaded gap. The pattern progresses systematically across the
   Qwen family: at small scale (0.5B) the gap shrinks with rising entropy; at
@@ -445,18 +457,18 @@ checkpoints we examine show a sign progression in the entropy coefficient that
 aligns with the direction prior aggregate literature predicts.
 
 Figure~\ref{fig:scaling} summarizes the within-Qwen scaling pattern across the
-three matched-precision checkpoints (1.5B, 7B, 14B): both ICC and the entropy
-coefficient grow monotonically with scale, while the intercept peaks at 7B
-and dips at 14B as accuracy gains partially offset the more concentrated
+four matched-precision checkpoints (1.5B, 3B, 7B, 14B): both ICC and the entropy
+coefficient grow log-linearly with scale, while the intercept peaks at 3B
+and dips at 7B and 14B as accuracy gains partially offset the more concentrated
 overconfidence pattern.
 
 \begin{figure}[h]
   \centering
-  \includegraphics[width=\textwidth]{figures/qwen_scaling_6m.pdf}
-  \caption{Within-Qwen scaling on three matched-precision checkpoints
-  (1.5B fp16, 7B 4-bit, 14B 4-bit). Both ICC$_\text{subject}$ and the entropy
-  coefficient grow monotonically with scale; the mean-overconfidence intercept
-  is non-monotonic, peaking at 7B and dipping slightly at 14B as accuracy gains
+  \includegraphics[width=\textwidth]{figures/qwen_scaling_7m.pdf}
+  \caption{Within-Qwen scaling on four matched-precision checkpoints
+  (1.5B fp16, 3B 4-bit, 7B 4-bit, 14B 4-bit). Both ICC$_\text{subject}$ and the entropy
+  coefficient grow log-linearly with scale; the mean-overconfidence intercept
+  is non-monotonic, peaking at 3B and dipping at 7B and 14B as accuracy gains
   partially offset the underlying overconfidence pattern. Error bars are 95\%
   CIs from the multilevel fit.}
   \label{fig:scaling}
@@ -473,7 +485,7 @@ exceptions are \texttt{high\_school\_statistics} and \texttt{formal\_logic}).
 
 \begin{figure}[h]
   \centering
-  \includegraphics[width=\textwidth]{figures/subject_mean_gap_6m.pdf}
+  \includegraphics[width=\textwidth]{figures/subject_mean_gap_7m.pdf}
   \caption{Mean calibration gap per subject, sorted ascending, for each of the
   six main models. Red bars indicate subjects where $H_0$: mean gap $= 0$ is
   rejected at FDR $\alpha = 0.05$; gray bars are not rejected.}
@@ -544,7 +556,7 @@ Qwen-14B and GPT-4o-mini vs Qwen-7B are 0.92 each.
 
 \begin{figure}[h]
   \centering
-  \includegraphics[width=0.7\textwidth]{figures/cross_model_heatmap_6m.pdf}
+  \includegraphics[width=0.7\textwidth]{figures/cross_model_heatmap_7m.pdf}
   \caption{Spearman rank correlation of subject-level ECE across the six main
   models (57 common subjects). Among the five larger models, all 10 pairwise
   correlations fall in $[0.78, 0.94]$. Qwen-0.5B's correlations with the others
@@ -682,7 +694,7 @@ pairs (Spearman $\rho \in [0.78, 0.94]$); the smallest model in our set
 different miscalibration pattern, which we interpret as a lower bound below
 which the elicitation protocol breaks down. Within the Qwen family at matched
 precision, both between-subject ICC and the entropy coefficient grow
-monotonically across the 1.5B/7B/14B scaling sweep---an observational pattern
+log-linearly across the 1.5B/3B/7B/14B scaling sweep---an observational pattern
 consistent with RLHF-induced confidence saturation rather than a controlled
 mechanism test. The audit's stable targets provide the structural justification
 for choosing subject-aware over global recalibration scoping---a choice
@@ -697,15 +709,14 @@ deployment.
 \textbf{Data analysis.} Jennifer Zhang conducted the original two-model
 analysis (GPT-4o-mini, Llama-3-8B-Instruct), including the multilevel model,
 calibration curves, FDR correction, and sensitivity checks. John Wright
-collected and analyzed the four additional Qwen-2.5 model runs (0.5B, 1.5B
-4-bit, 1.5B fp16, 7B, 14B), extended the multilevel and cross-model framework
-to six models, and produced the within-family scale, entropy-mechanism, and
+collected and analyzed the four additional Qwen-2.5 model runs (0.5B, 1.5B 4-bit, 1.5B fp16, 3B, 7B, 14B), extended the multilevel and cross-model framework
+to seven models, and produced the within-family scale, entropy-mechanism, and
 quantization-effect analyses.
 \textbf{Coding.} Jennifer Zhang built the original pipeline; John Wright
 extended it to support arbitrary models and produced the parameterized
 inference notebook used for the open-weight models.
 \textbf{Writing.} Jennifer Zhang drafted the original report; John Wright
-revised it for the six-model expansion and produced the final manuscript.
+revised it for the seven-model expansion and produced the final manuscript.
 \textbf{Presentation.} Jennifer Zhang prepared the slide deck.
 
 % ============================================================
