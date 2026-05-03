@@ -228,5 +228,5 @@ def run(model: str):
 
 
 if __name__ == "__main__":
-    for m in ["gpt4o", "llama", "qwen_1_5b", "qwen_7b"]:
+    for m in ["gpt4o", "llama", "qwen_0_5b", "qwen_1_5b", "qwen_1_5b_fp16", "qwen_7b", "qwen_14b"]:
         run(m)
