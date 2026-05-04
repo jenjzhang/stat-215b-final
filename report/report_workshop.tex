@@ -342,9 +342,9 @@ gap widens on the model's harder items (Q1 vs.\ Q4: $+0.05$ vs.\ $+0.37$ at
 growing faster than accuracy as both model scale and item entropy increase,
 rather than accuracy itself collapsing on hard items.
 
-\begin{figure*}[!t]
+\begin{figure}[h]
   \centering
-  \includegraphics[width=\textwidth]{figures/entropy_mechanism_7m.pdf}
+  \includegraphics[width=\columnwidth]{figures/entropy_mechanism_7m.pdf}
   \caption{Confidence (solid) and accuracy (dashed) by entropy quartile for
   the six larger models (Qwen-0.5B omitted; see Section~\ref{sec:positional}).
   Shaded area is the calibration gap. Within Qwen, the curves move roughly
@@ -352,7 +352,7 @@ rather than accuracy itself collapsing on hard items.
   stays near saturation across quartiles while accuracy still falls with
   entropy.}
   \label{fig:entropy}
-\end{figure*}
+\end{figure}
 
 This is the qualitative pattern reported at the aggregate level for RLHF-tuned
 models \citep{kadavath2022language, nakkiran2025trained, yaldiz2026balancing}.
@@ -385,15 +385,15 @@ substantive finding is the magnitude of heterogeneity: per-model gap ranges
 span 5.4--13.0$\times$ from the best-calibrated to the worst-calibrated subject
 in the larger six models.
 
-\begin{figure*}[!t]
+\begin{figure}[h]
   \centering
-  \includegraphics[width=\textwidth]{figures/subject_mean_gap_7m.pdf}
+  \includegraphics[width=\columnwidth]{figures/subject_mean_gap_7m.pdf}
   \caption{Mean calibration gap per subject, sorted ascending, for the six
   larger models (Qwen-0.5B omitted; see Section~\ref{sec:positional}). Red
   bars are FDR-rejected at $\alpha=0.05$; gray bars are not. Five of six
   models reject all 57 subjects; Qwen-1.5B (fp16) rejects 56/57.}
   \label{fig:meangap}
-\end{figure*}
+\end{figure}
 
 Sensitivity-analysis conclusions extend uniformly: ECE rankings are stable
 across bin counts (Spearman $\geq 0.97$ vs.\ 20-bin baseline), proper-scoring
