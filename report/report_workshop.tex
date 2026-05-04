@@ -58,7 +58,7 @@ to MMLU across seven instruction-tuned models from two families spanning six
 parameter scales: GPT-4o-mini, Llama-3-8B-Instruct, and Qwen-2.5-\{0.5B, 1.5B,
 3B, 7B, 14B\}-Instruct. Three findings emerge. (i)~Among the six models above 1B parameters,
 subject-level ECE rankings are highly correlated across all 15 model pairs
-(Spearman $\rho \in [0.79, 0.94]$), with cross-family agreement at matched
+(Spearman $\rho \in [0.80, 0.94]$), with cross-family agreement at matched
 capability matching the strongest within-family pairs. (ii)~The same subjects
 are robustly worst-calibrated (college-level quantitative STEM, niche factual
 recall, structured legal/professional reasoning) and robustly best-calibrated
@@ -92,7 +92,7 @@ wrong answers have no reliable way to detect the error. Our findings make this
 concrete: across seven models from two families spanning 0.5B to 14B parameters,
 the most severely miscalibrated subjects are stably the professional and
 technical domains---\texttt{professional\_law}, \texttt{virology},
-\texttt{college\_chemistry}, \texttt{machine\_learning}---precisely where
+\texttt{machine\_learning}, \texttt{abstract\_algebra}---precisely where
 reliable confidence signals matter most. Yet the standard calibration literature
 reports only aggregate scalars---ECE~\citep{guo2017calibration}, NLL, or
 related---that are silent about where miscalibration concentrates. We ask three
@@ -232,23 +232,22 @@ Qwen-2.5-14B-Instruct   & 0.010 & 0.156 & 0.059 \\
 \end{figure*}
 
 The same subject clusters appear at both extremes of the ECE distribution
-across the six larger models (Qwen-0.5B is excluded from the cluster analysis
-due to its positional-bias confound; Section~\ref{sec:positional}). Four
-subjects are top-10 most miscalibrated for every model:
-\texttt{virology}, \texttt{college\_chemistry}, \texttt{machine\_learning},
-\texttt{professional\_law}. Top-15 expansion adds
-\texttt{abstract\_algebra}, \texttt{college\_mathematics},
-\texttt{econometrics}, and \texttt{global\_facts}. These cluster into three
-semantic groups: college-level quantitative STEM (the majority),
-niche factual recall (\texttt{virology}, \texttt{global\_facts}), and
-structured legal/professional reasoning (\texttt{professional\_law})---the
-high-stakes domains where systematic overconfidence creates the largest harm
-potential.
+across the six larger models (Qwen-0.5B is excluded due to its
+positional-bias confound; Section~\ref{sec:positional}). Two subjects appear
+in the top-10 most miscalibrated for every model in our study:
+\texttt{virology} and \texttt{professional\_law}. A consistent cluster of
+college-level technical subjects---\texttt{abstract\_algebra},
+\texttt{college\_mathematics}, and \texttt{machine\_learning}---each appears
+in the top-5 most miscalibrated for four of the six larger models. Together
+these form two recurring patterns: college-level quantitative and technical
+content, and niche professional or factual knowledge (\texttt{virology},
+\texttt{professional\_law})---the high-stakes domains where systematic
+overconfidence creates the largest harm potential.
 
-Symmetrically, three subjects are bottom-5 best-calibrated for every larger
-model (\texttt{high\_school\_government\_and\_politics},
-\texttt{high\_school\_psychology}, \texttt{marketing}); bottom-10 adds
-\texttt{miscellaneous}. Two patterns:
+Symmetrically, \texttt{marketing} and \texttt{high\_school\_psychology}
+appear in the bottom-10 best-calibrated for every model in our study;
+\texttt{high\_school\_government\_and\_politics} is consistently among the
+best-calibrated across models. Two patterns:
 
 \begin{itemize}
   \item \textbf{Specialization level matters.} MMLU's high-school-level
@@ -424,10 +423,10 @@ $\sigma^2_\text{domain}=0$).
 heterogeneity that is statistically real (FDR-rejected, robust to bin count,
 robust to proper-scoring metrics), task-driven (correlated across families
 and scales above 1B parameters), and aligned with intuitive content axes
-(specialization level, domain category). A consistent best-calibrated set
-(high-school Social Sciences and applied subjects) and worst-calibrated set
-(college-level quantitative STEM, niche factual recall, structured reasoning)
-appear in every model above 1B parameters in our sample. Within the Qwen
+(specialization level, domain category). A consistent best-calibrated set (high-school Social Sciences and applied
+subjects) and worst-calibrated set (college-level quantitative and technical
+subjects, niche professional and factual knowledge) appear in every model
+above 1B parameters in our sample. Within the Qwen
 family the entropy coefficient grows monotonically with scale, while the
 between-subject ICC plateaus from 3B onward.
 
@@ -444,12 +443,12 @@ flagging miscalibration on a new model before deployment.
 Because the worst-calibrated subjects are stable across families and scales
 in our data, the protocol is portable: a deployer or regulator can re-run
 it on a new model and read off subject-level overconfidence directly,
-without re-establishing baselines. The recurring offenders in our
-sample---\texttt{professional\_law}, \texttt{virology},
-\texttt{college\_chemistry}, \texttt{machine\_learning}---are a natural starting
-point for pre-deployment review in legal, medical, and other high-stakes
-contexts where aggregate metrics like top-line ECE would mask the structured
-risk.
+without re-establishing baselines. The recurring offenders in our sample---\texttt{professional\_law},
+\texttt{virology}, and a consistent cluster of college-level technical subjects
+(\texttt{abstract\_algebra}, \texttt{college\_mathematics},
+\texttt{machine\_learning})---are a natural starting point for pre-deployment
+review in legal, medical, and other high-stakes contexts where aggregate
+metrics like top-line ECE would mask the structured risk.
 
 \paragraph{Limitations.}
 The within-family scale comparison rests on four observational checkpoints
