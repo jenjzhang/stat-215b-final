@@ -106,7 +106,7 @@ def figure_top_or_bottom(model, kind, n_show=5):
     s = summaries[model].sort_values("ece", ascending=(kind == "bottom"))
     subjects = s.head(n_show)
     q = questions[model]
-    fig, axes = plt.subplots(1, n_show, figsize=(3 * n_show, 3.2), sharey=True)
+    fig, axes = plt.subplots(1, n_show, figsize=(3 * n_show, 2.6), sharey=True)
     color = COLORS[model]
     for ax, (_, row) in zip(axes, subjects.iterrows()):
         sub = q[q["subject"] == row["subject"]]
@@ -136,7 +136,7 @@ def figure_entropy_mechanism(model_list, suffix, ncols=None):
     if ncols is None:
         ncols = n
     nrows = (n + ncols - 1) // ncols
-    fig, axes = plt.subplots(nrows, ncols, figsize=(2.5 * ncols, 3.2 * nrows), sharey=True)
+    fig, axes = plt.subplots(nrows, ncols, figsize=(2.5 * ncols, 2.2 * nrows), sharey=True)
     axes = axes.flatten() if hasattr(axes, "flatten") else [axes]
     quartile_labels = ["Q1\n(low)", "Q2", "Q3", "Q4\n(high)"]
 
@@ -307,7 +307,7 @@ figure_coef_plot()
 # Figure 5: subject mean gap (6 panels, one per main model)
 # ============================================================
 def figure_subject_mean_gap():
-    fig, axes = plt.subplots(2, 3, figsize=(12, 7), sharey=True)
+    fig, axes = plt.subplots(2, 3, figsize=(12, 4.2), sharey=True)
     axes = axes.flatten()
     for ax, m in zip(axes, SIX_MAIN_MODELS):
         f = fdr[m].copy().sort_values("mean_gap")
