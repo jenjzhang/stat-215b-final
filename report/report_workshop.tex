@@ -129,7 +129,7 @@ position. The 3B, 7B, 8B, and 14B models use 4-bit quantization (BitsAndBytes;
 \citealt{dettmers2022gptint}); the 1.5B model is run twice (4-bit and fp16) so
 the precision effect can be examined directly, with the fp16 version used as
 the canonical 1.5B in the main analysis. Test-set accuracies: 0.749, 0.606,
-0.405, 0.571, 0.658, 0.685, 0.757 for GPT, Llama, Qwen-\{0.5B, 1.5B fp16, 3B, 7B, 14B\}.
+0.405, 0.571, 0.601, 0.685, 0.757 for GPT, Llama, Qwen-\{0.5B, 1.5B fp16, 3B, 7B, 14B\}.
 Qwen-0.5B exhibits extreme positional bias (predicting D 59\% of the time vs.
 A 5.6\%), a confound we discuss where it affects results.
 
