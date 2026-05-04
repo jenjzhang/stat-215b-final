@@ -345,11 +345,12 @@ rather than accuracy itself collapsing on hard items.
 \begin{figure*}[!t]
   \centering
   \includegraphics[width=\textwidth]{figures/entropy_mechanism_7m.pdf}
-  \caption{Confidence (solid) and accuracy (dashed) by entropy quartile per
-  model. Shaded area is the calibration gap. Within Qwen, the curves move
-  roughly together at 1.5B, but separate progressively at 7B and 14B as
-  confidence stays near saturation across quartiles while accuracy still falls
-  with entropy.}
+  \caption{Confidence (solid) and accuracy (dashed) by entropy quartile for
+  the six larger models (Qwen-0.5B omitted; see Section~\ref{sec:positional}).
+  Shaded area is the calibration gap. Within Qwen, the curves move roughly
+  together at 1.5B, but separate progressively at 7B and 14B as confidence
+  stays near saturation across quartiles while accuracy still falls with
+  entropy.}
   \label{fig:entropy}
 \end{figure*}
 
@@ -387,9 +388,10 @@ in the larger six models.
 \begin{figure*}[!t]
   \centering
   \includegraphics[width=\textwidth]{figures/subject_mean_gap_7m.pdf}
-  \caption{Mean calibration gap per subject, sorted ascending, for all seven
-  models. Red bars are FDR-rejected at $\alpha=0.05$; gray bars are not. Five
-  of seven models reject all 57 subjects.}
+  \caption{Mean calibration gap per subject, sorted ascending, for the six
+  larger models (Qwen-0.5B omitted; see Section~\ref{sec:positional}). Red
+  bars are FDR-rejected at $\alpha=0.05$; gray bars are not. Five of six
+  models reject all 57 subjects; Qwen-1.5B (fp16) rejects 56/57.}
   \label{fig:meangap}
 \end{figure*}
 

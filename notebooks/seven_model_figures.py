@@ -16,6 +16,7 @@ FIG = Path("report/figures")
 FIG.mkdir(exist_ok=True)
 
 MAIN_MODELS = ["gpt4o", "llama", "qwen_0_5b", "qwen_1_5b_fp16", "qwen_3b", "qwen_7b", "qwen_14b"]
+SIX_MAIN_MODELS = ["gpt4o", "llama", "qwen_1_5b_fp16", "qwen_3b", "qwen_7b", "qwen_14b"]  # drops Qwen-0.5B
 QWEN_SCALE_MAIN = ["qwen_1_5b_fp16", "qwen_3b", "qwen_7b", "qwen_14b"]   # Qwen scaling sweep (matched precision)
 QWEN_SCALE_FULL = ["qwen_0_5b", "qwen_1_5b_fp16", "qwen_3b", "qwen_7b", "qwen_14b"]
 APPENDIX = ["qwen_1_5b", "qwen_1_5b_fp16"]                    # precision comparison
@@ -185,7 +186,7 @@ def figure_entropy_mechanism(model_list, suffix, ncols=None):
     print(f"Saved {out}")
 
 
-figure_entropy_mechanism(MAIN_MODELS, "7m", ncols=4)
+figure_entropy_mechanism(SIX_MAIN_MODELS, "7m", ncols=3)
 figure_entropy_mechanism(APPENDIX, "appendix_quant", ncols=2)
 
 
@@ -306,9 +307,9 @@ figure_coef_plot()
 # Figure 5: subject mean gap (6 panels, one per main model)
 # ============================================================
 def figure_subject_mean_gap():
-    fig, axes = plt.subplots(2, 4, figsize=(15, 7), sharey=True)
+    fig, axes = plt.subplots(2, 3, figsize=(12, 7), sharey=True)
     axes = axes.flatten()
-    for ax, m in zip(axes, MAIN_MODELS):
+    for ax, m in zip(axes, SIX_MAIN_MODELS):
         f = fdr[m].copy().sort_values("mean_gap")
         x = np.arange(len(f))
         colors_ = ["#d62728" if r else "#7f7f7f" for r in f["reject"].values]
@@ -317,11 +318,9 @@ def figure_subject_mean_gap():
         ax.set_title(f"{SHORT[m]}", fontsize=10)
         ax.set_xticks([])
         ax.set_xlabel(f"57 subjects (sorted)")
-        if ax is axes[0] or ax is axes[4]:
+        if ax is axes[0] or ax is axes[3]:
             ax.set_ylabel("Mean calibration gap")
         ax.grid(axis="y", alpha=0.3)
-    # Hide the unused 8th panel
-    axes[7].axis("off")
     fig.suptitle("Subject-level mean calibration gap (red = FDR-rejected at α=0.05)",
                  fontsize=11, y=0.99)
     fig.tight_layout()
