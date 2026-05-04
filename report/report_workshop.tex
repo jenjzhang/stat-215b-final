@@ -54,7 +54,7 @@ question-level calibration gap variance, isotonic reliability curves per subject
 empirical Bayes shrinkage, and Benjamini--Hochberg FDR correction---and apply it
 to MMLU across seven instruction-tuned models from two families spanning six
 parameter scales: GPT-4o-mini, Llama-3-8B-Instruct, and Qwen-2.5-\{0.5B, 1.5B,
-3B, 7B, 14B\}-Instruct. Three findings emerge. (i)~Among the six larger models,
+3B, 7B, 14B\}-Instruct. Three findings emerge. (i)~Among the six models above 1B parameters,
 subject-level ECE rankings are highly correlated across all 15 model pairs
 (Spearman $\rho \in [0.78, 0.94]$), with cross-family agreement at matched
 capability matching the strongest within-family pairs. (ii)~The same subjects
@@ -63,10 +63,11 @@ recall, structured ethical/legal reasoning) and robustly best-calibrated
 (high-school-level Social Sciences and applied/factual subjects), revealing
 specialization level as a meaningful axis of calibration quality. (iii)~Within
 the Qwen family at matched precision, the entropy coefficient on the
-calibration gap rises monotonically across the 1.5B$\to$3B$\to$7B$\to$14B
-scaling sweep, with confidence growing faster than accuracy as items become
-harder---qualitatively consistent with prior reports of RLHF-induced
-confidence saturation \citep{kadavath2022language, nakkiran2025trained}. The
+calibration gap increases with scale across the 1.5B$\to$3B$\to$7B$\to$14B
+sweep, reaching significance at 7B and 14B, with confidence growing faster
+than accuracy as items become harder---qualitatively consistent with prior
+reports of RLHF-induced confidence saturation
+\citep{kadavath2022language, nakkiran2025trained}. The
 smallest model in our set (Qwen-0.5B) shows extreme positional bias and a
 qualitatively different miscalibration pattern; we read it as a sign that our
 elicitation protocol does not extend cleanly below approximately 1B
@@ -86,7 +87,7 @@ answer independently---placing full weight on the model's expressed confidence
 as a reliability signal. Systematic overconfidence in these domains therefore
 creates a predictable, population-scale harm: users acting on high-confidence
 wrong answers have no reliable way to detect the error. Our findings make this
-concrete: across seven models from two families spanning a 28$\times$ scale range,
+concrete: across seven models from two families spanning 0.5B to 14B parameters,
 the most severely miscalibrated subjects are stably the professional and
 technical domains---\texttt{professional\_law}, \texttt{virology},
 \texttt{college\_chemistry}, \texttt{college\_mathematics}---precisely where
@@ -125,8 +126,13 @@ in passing.
 \section{Method}
 % ============================================================
 
+\paragraph{Data.}
+We use the MMLU benchmark \citep{hendrycks2021measuring}, comprising 14,042
+four-choice questions across 57 subjects nested in four broad domains (STEM,
+Social Sciences, Humanities, Other), evaluated on the test split.
+
 \paragraph{Confidence elicitation.}
-For each MMLU question we extract token-level log probabilities over
+For each question we extract token-level log probabilities over
 $\{A, B, C, D\}$, softmax-renormalize, and define $c_i$ as the maximum
 renormalized probability. The signed calibration gap
 $\mathrm{gap}_i = c_i - y_i$ (where $y_i \in \{0, 1\}$ is correctness) is our
@@ -138,8 +144,12 @@ position. The 3B, 7B, 8B, and 14B models use 4-bit quantization (BitsAndBytes;
 the precision effect can be examined directly, with the fp16 version used as
 the canonical 1.5B in the main analysis. Test-set accuracies: 0.749, 0.606,
 0.405, 0.571, 0.601, 0.685, 0.757 for GPT, Llama, Qwen-\{0.5B, 1.5B fp16, 3B, 7B, 14B\}.
-Qwen-0.5B exhibits extreme positional bias (predicting D 59\% of the time vs.
-A 5.6\%), a confound we discuss where it affects results.
+Qwen-0.5B exhibits extreme positional bias (predicting D 59\% of the time vs.\
+A 5.6\%). We include it in all model-level summaries (Tables~\ref{tab:icc}--\ref{tab:fixef},
+Figure~\ref{fig:coef}) but exclude it from subject-ranking analyses
+(Figures~\ref{fig:reliability},~\ref{fig:entropy},~\ref{fig:meangap} and the
+cluster analysis in Section~\ref{sec:positional}), since its subject rankings
+reflect positional bias rather than genuine calibration.
 
 \paragraph{Multilevel decomposition.}
 We fit a three-level mixed-effects model with questions nested in subjects
@@ -321,9 +331,9 @@ Qwen-14B       & 0.210$^{***}$ &  0.023$^{***}$ & -0.007 &  0.005 &  0.040$^{***
   \centering
   \includegraphics[width=\columnwidth]{figures/coef_plot_7m.pdf}
   \caption{Fixed effect estimates with 95\% confidence intervals across the seven
-  models. The entropy coefficient progression---from strongly negative at
-  Qwen-0.5B through near-zero at Qwen-1.5B to strongly positive at the larger
-  Qwens---is the most informative pattern.}
+  models. Qwen-0.5B's strongly negative entropy coefficient reflects positional
+  bias (Section~\ref{sec:positional}), not a genuine scale effect. Among the
+  six larger models, the entropy coefficient increases with scale.}
   \label{fig:coef}
 \end{figure}
 
@@ -346,11 +356,10 @@ rather than accuracy itself collapsing on hard items.
   \centering
   \includegraphics[width=\columnwidth]{figures/entropy_mechanism_7m.pdf}
   \caption{Confidence (solid) and accuracy (dashed) by entropy quartile for
-  the six larger models (Qwen-0.5B omitted; see Section~\ref{sec:positional}).
-  Shaded area is the calibration gap. Within Qwen, the curves move roughly
-  together at 1.5B, but separate progressively at 7B and 14B as confidence
-  stays near saturation across quartiles while accuracy still falls with
-  entropy.}
+  the six models above 1B parameters. Shaded area is the calibration gap.
+  Within Qwen, the curves move roughly together at 1.5B, but separate
+  progressively at 7B and 14B as confidence stays near saturation across
+  quartiles while accuracy still falls with entropy.}
   \label{fig:entropy}
 \end{figure}
 
@@ -380,7 +389,9 @@ intercept is non-monotonic.
 \subsection{FDR-corrected rankings and sensitivity}
 
 At $\alpha = 0.05$: GPT-4o-mini, Llama, Qwen-3B, Qwen-7B, and Qwen-14B reject all 57
-subjects; Qwen-1.5B (fp16) rejects 56/57, and Qwen-0.5B rejects 55/57. The
+subjects; Qwen-1.5B (fp16) rejects 56/57, and Qwen-0.5B rejects 55/57
+(though its rejections reflect positional bias rather than genuine subject-level
+miscalibration). The
 substantive finding is the magnitude of heterogeneity: per-model gap ranges
 span 5.4--13.0$\times$ from the best-calibrated to the worst-calibrated subject
 in the larger six models.
@@ -389,9 +400,9 @@ in the larger six models.
   \centering
   \includegraphics[width=\columnwidth]{figures/subject_mean_gap_7m.pdf}
   \caption{Mean calibration gap per subject, sorted ascending, for the six
-  larger models (Qwen-0.5B omitted; see Section~\ref{sec:positional}). Red
-  bars are FDR-rejected at $\alpha=0.05$; gray bars are not. Five of six
-  models reject all 57 subjects; Qwen-1.5B (fp16) rejects 56/57.}
+  models above 1B parameters. Red bars are FDR-rejected at $\alpha=0.05$;
+  gray bars are not. Five of six models reject all 57 subjects; Qwen-1.5B
+  (fp16) rejects 56/57.}
   \label{fig:meangap}
 \end{figure}
 
