@@ -16,6 +16,12 @@
 % Basic TeX installation lacks Courier metrics; fall back to CM teletype
 \renewcommand{\ttdefault}{cmtt}
 
+% Allow figure* floats to share pages with text rather than drifting to end
+\renewcommand{\dbltopfraction}{0.9}
+\renewcommand{\textfraction}{0.05}
+\renewcommand{\dblfloatpagefraction}{0.85}
+\setcounter{dbltopnumber}{4}
+
 \icmltitlerunning{Subject-Level Calibration Heterogeneity Across LLM Families and Scales}
 
 \begin{document}
@@ -236,7 +242,7 @@ heterogeneity that aggregate ECE conceals: in a single model on a single
 benchmark, some subjects sit on the calibration diagonal while others fall
 sharply below it.
 
-\begin{figure*}[t]
+\begin{figure*}[!t]
   \centering
   \includegraphics[width=\textwidth]{figures/top5_most_miscalibrated_gpt4o_7m.pdf}
   \vspace{0.5em}
@@ -336,7 +342,7 @@ gap widens on the model's harder items (Q1 vs.\ Q4: $+0.05$ vs.\ $+0.37$ at
 growing faster than accuracy as both model scale and item entropy increase,
 rather than accuracy itself collapsing on hard items.
 
-\begin{figure*}[t]
+\begin{figure*}[!t]
   \centering
   \includegraphics[width=\textwidth]{figures/entropy_mechanism_7m.pdf}
   \caption{Confidence (solid) and accuracy (dashed) by entropy quartile per
@@ -378,7 +384,7 @@ substantive finding is the magnitude of heterogeneity: per-model gap ranges
 span 5.4--13.0$\times$ from the best-calibrated to the worst-calibrated subject
 in the larger six models.
 
-\begin{figure*}[t]
+\begin{figure*}[!t]
   \centering
   \includegraphics[width=\textwidth]{figures/subject_mean_gap_7m.pdf}
   \caption{Mean calibration gap per subject, sorted ascending, for all seven
