@@ -204,6 +204,19 @@ Qwen-2.5-14B-Instruct   & 0.010 & 0.156 & 0.059 \\
 
 \subsection{Where calibration succeeds vs.\ fails (RQ1)}
 
+\begin{figure*}[!t]
+  \centering
+  \includegraphics[width=\textwidth]{figures/top5_most_miscalibrated_gpt4o_7m.pdf}
+  \vspace{0.5em}
+  \includegraphics[width=\textwidth]{figures/bottom5_best_calibrated_gpt4o_7m.pdf}
+  \caption{GPT-4o-mini reliability curves. \textbf{Top}: five most miscalibrated
+  subjects by ECE. \textbf{Bottom}: five best-calibrated subjects. Same
+  conventions in both: solid line is isotonic regression, plotted only on
+  observed support; markers are 20-bin empirical accuracy sized by bin count;
+  dashed line is the calibration diagonal.}
+  \label{fig:reliability}
+\end{figure*}
+
 The same subject clusters appear at both extremes of the ECE distribution
 across the six larger models (Qwen-0.5B is excluded from the cluster analysis
 due to its positional-bias confound; Section~\ref{sec:positional}). Four
@@ -241,19 +254,6 @@ isotonic extrapolation in regions with no data. The two panels reveal the
 heterogeneity that aggregate ECE conceals: in a single model on a single
 benchmark, some subjects sit on the calibration diagonal while others fall
 sharply below it.
-
-\begin{figure*}[!t]
-  \centering
-  \includegraphics[width=\textwidth]{figures/top5_most_miscalibrated_gpt4o_7m.pdf}
-  \vspace{0.5em}
-  \includegraphics[width=\textwidth]{figures/bottom5_best_calibrated_gpt4o_7m.pdf}
-  \caption{GPT-4o-mini reliability curves. \textbf{Top}: five most miscalibrated
-  subjects by ECE. \textbf{Bottom}: five best-calibrated subjects. Same
-  conventions in both: solid line is isotonic regression, plotted only on
-  observed support; markers are 20-bin empirical accuracy sized by bin count;
-  dashed line is the calibration diagonal.}
-  \label{fig:reliability}
-\end{figure*}
 
 \subsection{Cross-model agreement (RQ2)}
 \label{sec:positional}
