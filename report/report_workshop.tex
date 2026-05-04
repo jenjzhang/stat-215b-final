@@ -115,8 +115,10 @@ empirically justified.
 Prior work has studied LLM calibration mostly at the aggregate level.
 \citet{kadavath2022language} showed that token-level logprobs carry a meaningful
 calibration signal on multiple-choice tasks and that instruction tuning tends to
-degrade it; \citet{xiong2024can} noted calibration degrades on tasks requiring
-professional knowledge but did not investigate subject-level structure formally.
+degrade it; \citet{jiang2021can} showed that question-level features predict
+calibration quality on QA tasks; \citet{xiong2024can} noted calibration degrades
+on tasks requiring professional knowledge but did not investigate subject-level
+structure formally.
 \citet{nakkiran2025trained} and \citet{yaldiz2026balancing} document
 RLHF-induced confidence saturation at the aggregate level. We bring a formal
 statistical audit to the within-benchmark heterogeneity these works describe only
@@ -174,7 +176,7 @@ the curve and the diagonal.
 \paragraph{Multiple testing.}
 For each of 57 subjects we test $H_0$: mean calibration gap $= 0$ via a
 one-sample $t$-test on question-level gaps, then apply Benjamini--Hochberg FDR
-correction at $\alpha = 0.05$.
+correction \citep{bh1995} at $\alpha = 0.05$.
 
 % ============================================================
 \section{Results}
@@ -479,7 +481,6 @@ for high-stakes deployments where calibration failures carry the greatest
 societal cost.
 
 % ============================================================
-\clearpage
 \bibliographystyle{icml2026}
 \bibliography{references}
 % ============================================================
