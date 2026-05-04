@@ -56,10 +56,10 @@ to MMLU across seven instruction-tuned models from two families spanning six
 parameter scales: GPT-4o-mini, Llama-3-8B-Instruct, and Qwen-2.5-\{0.5B, 1.5B,
 3B, 7B, 14B\}-Instruct. Three findings emerge. (i)~Among the six models above 1B parameters,
 subject-level ECE rankings are highly correlated across all 15 model pairs
-(Spearman $\rho \in [0.78, 0.94]$), with cross-family agreement at matched
+(Spearman $\rho \in [0.79, 0.94]$), with cross-family agreement at matched
 capability matching the strongest within-family pairs. (ii)~The same subjects
 are robustly worst-calibrated (college-level quantitative STEM, niche factual
-recall, structured ethical/legal reasoning) and robustly best-calibrated
+recall, structured legal/professional reasoning) and robustly best-calibrated
 (high-school-level Social Sciences and applied/factual subjects), revealing
 specialization level as a meaningful axis of calibration quality. (iii)~Within
 the Qwen family at matched precision, the entropy coefficient on the
@@ -90,7 +90,7 @@ wrong answers have no reliable way to detect the error. Our findings make this
 concrete: across seven models from two families spanning 0.5B to 14B parameters,
 the most severely miscalibrated subjects are stably the professional and
 technical domains---\texttt{professional\_law}, \texttt{virology},
-\texttt{college\_chemistry}, \texttt{college\_mathematics}---precisely where
+\texttt{college\_chemistry}, \texttt{machine\_learning}---precisely where
 reliable confidence signals matter most. Yet the standard calibration literature
 reports only aggregate scalars---ECE~\citep{guo2017calibration}, NLL, or
 related---that are silent about where miscalibration concentrates. We ask three
@@ -231,19 +231,19 @@ The same subject clusters appear at both extremes of the ECE distribution
 across the six larger models (Qwen-0.5B is excluded from the cluster analysis
 due to its positional-bias confound; Section~\ref{sec:positional}). Four
 subjects are top-10 most miscalibrated for every model:
-\texttt{virology}, \texttt{college\_chemistry}, \texttt{college\_physics},
+\texttt{virology}, \texttt{college\_chemistry}, \texttt{machine\_learning},
 \texttt{professional\_law}. Top-15 expansion adds
-\texttt{college\_mathematics}, \texttt{econometrics},
-\texttt{high\_school\_physics}, \texttt{machine\_learning}, and
-\texttt{moral\_scenarios}. These cluster into three semantic groups:
-college-level quantitative STEM, niche factual recall, and structured
-ethical/legal reasoning---precisely the high-stakes domains where systematic
-overconfidence creates the largest harm potential.
+\texttt{abstract\_algebra}, \texttt{college\_mathematics},
+\texttt{econometrics}, and \texttt{global\_facts}. These cluster into three
+semantic groups: college-level quantitative STEM (the majority),
+niche factual recall (\texttt{virology}, \texttt{global\_facts}), and
+structured legal/professional reasoning (\texttt{professional\_law})---the
+high-stakes domains where systematic overconfidence creates the largest harm
+potential.
 
-Symmetrically, two subjects are bottom-5 best-calibrated for every larger model
-(\texttt{high\_school\_government\_and\_politics},
-\texttt{high\_school\_psychology}); bottom-10 adds
-\texttt{high\_school\_us\_history}, \texttt{marketing}, and
+Symmetrically, three subjects are bottom-5 best-calibrated for every larger
+model (\texttt{high\_school\_government\_and\_politics},
+\texttt{high\_school\_psychology}, \texttt{marketing}); bottom-10 adds
 \texttt{miscellaneous}. Two patterns:
 
 \begin{itemize}
@@ -270,13 +270,13 @@ sharply below it.
 
 Figure~\ref{fig:crossmodel} reports the 7$\times$7 Spearman rank correlation
 matrix of subject-level ECE. Among the six larger models, all 15 pairwise
-correlations fall in $[0.78, 0.94]$, with the strongest pair Qwen-7B vs Qwen-14B
-at 0.94 and the cross-family GPT-4o-mini vs Qwen-14B and GPT-4o-mini vs Qwen-7B
-both at 0.92. Subject-level miscalibration patterns are therefore consistent
+correlations fall in $[0.79, 0.94]$, with the strongest pair Qwen-7B vs Qwen-14B
+at 0.94 and the cross-family GPT-4o-mini vs Qwen-7B at 0.92 and GPT-4o-mini
+vs Qwen-14B at 0.91. Subject-level miscalibration patterns are therefore consistent
 across model families and scales above approximately 1B parameters.
 
 Qwen-0.5B is the conspicuous exception: its correlations with the other six
-models fall in $[0.16, 0.22]$, with bootstrap 95\% CIs that include zero. The
+models fall in $[0.13, 0.20]$, with bootstrap 95\% CIs that include zero. The
 underlying cause is extreme positional bias---Qwen-0.5B predicts D on 59\% of
 questions and A on only 5.6\%, vs.\ approximately uniform 25\% for the larger
 models. The 0.5B's miscalibration is therefore dominated by a spurious
@@ -290,8 +290,8 @@ bias dominates the calibration signal in our elicitation protocol.
   \includegraphics[width=\columnwidth]{figures/cross_model_heatmap_7m.pdf}
   \caption{Spearman rank correlation matrix of subject-level ECE across the seven
   models (57 common subjects). Among the six larger models, all 15 pairwise
-  correlations fall in $[0.78, 0.94]$. Qwen-0.5B's correlations with the others
-  are $[0.16, 0.22]$, reflecting a qualitatively different miscalibration
+  correlations fall in $[0.79, 0.94]$. Qwen-0.5B's correlations with the others
+  are $[0.13, 0.20]$, reflecting a qualitatively different miscalibration
   pattern driven by extreme positional bias.}
   \label{fig:crossmodel}
 \end{figure}
@@ -393,8 +393,8 @@ subjects; Qwen-1.5B (fp16) rejects 56/57, and Qwen-0.5B rejects 55/57
 (though its rejections reflect positional bias rather than genuine subject-level
 miscalibration). The
 substantive finding is the magnitude of heterogeneity: per-model gap ranges
-span 5.4--13.0$\times$ from the best-calibrated to the worst-calibrated subject
-in the larger six models.
+span 3.8--13.0$\times$ from the best-calibrated to the worst-calibrated subject
+across the larger six models.
 
 \begin{figure}[h]
   \centering
@@ -442,7 +442,7 @@ in our data, the protocol is portable: a deployer or regulator can re-run
 it on a new model and read off subject-level overconfidence directly,
 without re-establishing baselines. The recurring offenders in our
 sample---\texttt{professional\_law}, \texttt{virology},
-\texttt{college\_chemistry}, \texttt{moral\_scenarios}---are a natural starting
+\texttt{college\_chemistry}, \texttt{machine\_learning}---are a natural starting
 point for pre-deployment review in legal, medical, and other high-stakes
 contexts where aggregate metrics like top-line ECE would mask the structured
 risk.
@@ -466,9 +466,9 @@ Subject-level calibration heterogeneity in LLMs is large and stable across
 model families above approximately 1B parameters in our sample.
 Applied/factual high-school subjects are reliably well-calibrated;
 college-level technical content, niche factual recall, and structured
-ethical/legal reasoning are reliably poorly calibrated. Subject-level ECE
+legal/professional reasoning are reliably poorly calibrated. Subject-level ECE
 rankings correlate strongly across all 15 pairs of larger models ($\rho \in
-[0.78, 0.94]$), including cross-family pairs at matched capability, pointing
+[0.79, 0.94]$), including cross-family pairs at matched capability, pointing
 to task structure rather than any particular training pipeline. Within the
 Qwen family the entropy coefficient grows monotonically with scale, with
 confidence outpacing accuracy on harder questions---qualitatively in line
