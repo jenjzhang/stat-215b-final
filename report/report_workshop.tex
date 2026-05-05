@@ -273,7 +273,7 @@ sharply below it.
 
 Figure~\ref{fig:crossmodel} reports the 7$\times$7 Spearman rank correlation
 matrix of subject-level ECE. Among the six larger models, all 15 pairwise
-correlations fall in $[0.79, 0.94]$, with the strongest pair Qwen-7B vs Qwen-14B
+correlations fall in $[0.80, 0.94]$, with the strongest pair Qwen-7B vs Qwen-14B
 at 0.94 and the cross-family GPT-4o-mini vs Qwen-7B at 0.92 and GPT-4o-mini
 vs Qwen-14B at 0.91. Subject-level miscalibration patterns are therefore consistent
 across model families and scales above approximately 1B parameters.
@@ -293,7 +293,7 @@ bias dominates the calibration signal in our elicitation protocol.
   \includegraphics[width=\columnwidth]{figures/cross_model_heatmap_7m.pdf}
   \caption{Spearman rank correlation matrix of subject-level ECE across the seven
   models (57 common subjects). Among the six larger models, all 15 pairwise
-  correlations fall in $[0.79, 0.94]$. Qwen-0.5B's correlations with the others
+  correlations fall in $[0.80, 0.94]$. Qwen-0.5B's correlations with the others
   are $[0.13, 0.20]$, reflecting a qualitatively different miscalibration
   pattern driven by extreme positional bias.}
   \label{fig:crossmodel}
@@ -349,7 +349,7 @@ each model's questions into entropy quartiles and plotting mean confidence
 (solid) and mean accuracy (dashed). At 1.5B the two curves move roughly
 together across quartiles, so the gap is nearly flat in entropy (Q1 vs.\ Q4:
 $+0.09$ vs.\ $+0.13$). At 7B and 14B confidence stays near saturation across
-all four quartiles while accuracy still drops with entropy as expected, so the
+the first three quartiles while accuracy still drops with entropy, so the
 gap widens on the model's harder items (Q1 vs.\ Q4: $+0.05$ vs.\ $+0.37$ at
 7B; $+0.03$ vs.\ $+0.46$ at 14B). The qualitative pattern is one of confidence
 growing faster than accuracy as both model scale and item entropy increase,
@@ -362,7 +362,7 @@ rather than accuracy itself collapsing on hard items.
   the six models above 1B parameters. Shaded area is the calibration gap.
   Within Qwen, the curves move roughly together at 1.5B, but separate
   progressively at 7B and 14B as confidence stays near saturation across
-  quartiles while accuracy still falls with entropy.}
+  the first three quartiles while accuracy falls with entropy.}
   \label{fig:entropy}
 \end{figure}
 
@@ -471,7 +471,7 @@ Applied/factual high-school subjects are reliably well-calibrated;
 college-level technical content, niche factual recall, and structured
 legal/professional reasoning are reliably poorly calibrated. Subject-level ECE
 rankings correlate strongly across all 15 pairs of larger models ($\rho \in
-[0.79, 0.94]$), including cross-family pairs at matched capability, pointing
+[0.80, 0.94]$), including cross-family pairs at matched capability, pointing
 to task structure rather than any particular training pipeline. Within the
 Qwen family the entropy coefficient grows monotonically with scale, with
 confidence outpacing accuracy on harder questions---qualitatively in line
