@@ -23,8 +23,8 @@ framework and apply it to MMLU \citep{hendrycks2021measuring} using token-level
 log probabilities from seven instruction-tuned models spanning two families and
 six parameter scales: GPT-4o-mini, Llama-3-8B-Instruct, and
 Qwen-2.5-\{0.5B, 1.5B, 3B, 7B, 14B\}-Instruct. Our framework combines a three-level
-mixed-effects model, isotonic and kernel-smoothed reliability curves, empirical
-Bayes shrinkage, and Benjamini--Hochberg FDR correction. Across the seven models,
+mixed-effects model, isotonic and kernel-smoothed reliability curves, and
+Benjamini--Hochberg FDR correction. Across the seven models,
 between-subject calibration variance accounts for 1.7--7.9\% of the total, and
 55--57 of 57 subjects are flagged as significantly miscalibrated at FDR
 $\alpha=0.05$. Subject-level ECE rankings are highly correlated for the six
@@ -87,9 +87,7 @@ implication of the audit is structural: if miscalibration is diffuse, a single
 global recalibration (e.g., temperature scaling) is a reasonable fix; if it is
 concentrated in specific subject clusters and those clusters are stable across
 models, then subject-aware recalibration becomes a structurally appropriate
-scoping choice---a position that has been validated empirically by
-\citet{luo2025pretrained}, who fit subject-specific temperature parameters per
-MMLU subject. Our contribution is the diagnostic arm of that picture: stable
+scoping choice. Our contribution is the diagnostic arm: stable
 audit findings establish whether the structural assumption behind a subject-aware
 correction is warranted in the first place.
 
@@ -123,17 +121,12 @@ effect also documented in \citet{ouyang2022training}.
 \paragraph{Domain-level heterogeneity.}
 \citet{xiong2024can} is the closest prior work in spirit, benchmarking confidence
 elicitation across task types. \citet{jiang2021can} showed that question-level features
-predict calibration on QA tasks. \citet{luo2025pretrained} fits subject-specific
-temperature parameters for each of MMLU's 57 subjects, implicitly acknowledging that a
-global correction is insufficient; \citet{tan2026basecal} uses base model signals for
-unsupervised recalibration. Neither work performs a formal statistical audit of
-subject-level heterogeneity.
+predict calibration on QA tasks. \citet{tan2026basecal} uses base model signals for unsupervised recalibration.
+Neither work performs a formal statistical audit of subject-level heterogeneity.
 
-\paragraph{Multiple testing and empirical Bayes.}
+\paragraph{Multiple testing and multilevel modeling.}
 The Benjamini--Hochberg procedure \citep{bh1995} controls the false discovery rate and
-is standard in high-dimensional inference. Empirical Bayes shrinkage of group-level
-estimates \citep[e.g.,][]{efron2012large} is standard in multilevel modeling via best
-linear unbiased predictors (BLUPs). We use the multilevel modeling framework of
+is standard in high-dimensional inference. We use the multilevel modeling framework of
 \citet{raudenbush2002hierarchical} to decompose calibration variance across levels of
 the MMLU hierarchy.
 
@@ -158,14 +151,13 @@ than the API default of 5) ensures all four answer tokens are captured for
 virtually every question. \textbf{Llama-3-8B-Instruct} and \textbf{Qwen-2.5
 \{0.5B, 1.5B, 3B, 7B, 14B\}-Instruct} are run locally on a Colab GPU. The 3B,
 7B, 8B, and 14B models use 4-bit quantization (BitsAndBytes;
-\citealt{dettmers2022gptint}); the 0.5B model also uses 4-bit, and the 1.5B
+\citealt{dettmers2023qlora}); the 0.5B model also uses 4-bit, and the 1.5B
 model is run twice (once at 4-bit, once at fp16) so the precision effect can be
 examined directly.\footnote{The fp16 1.5B run was added after we observed that
 the 4-bit 1.5B run had unusual positional bias (predictions skewed toward B at
 36\%) and accuracy 0.054 below the published full-precision figure. The fp16
 run brought both numbers in line with the published figures and is used as the
-canonical 1.5B in the main analysis. The 4-bit version is preserved for the
-precision-effect appendix.} For all seven models we pre-fill the assistant turn
+canonical 1.5B in the main analysis. The 4-bit version is retained for reference.} For all seven models we pre-fill the assistant turn
 with ``The answer is'' before extracting logprobs at the next-token position.
 Test-set accuracies are 0.749 (GPT-4o-mini), 0.606 (Llama), 0.405 (Qwen-0.5B),
 0.571 (Qwen-1.5B fp16), 0.601 (Qwen-3B), 0.685 (Qwen-7B), 0.757 (Qwen-14B).
@@ -197,6 +189,19 @@ of the longest answer choice); \textbf{negation indicator} (\textit{not},
 \textbf{entropy} of the softmax distribution over A/B/C/D in nats,
 $H_i = -\sum_k p_{ik} \log p_{ik}$, ranging from $0$ to $\log 4 \approx 1.386$.
 
+\paragraph{Elicitation judgment calls.}
+We extract confidence from token-level logprobs over \{A, B, C, D\} rather than
+asking the model to verbalize a probability, for two reasons. First, logprob-based
+elicitation is model-agnostic and avoids conflating calibration with
+instruction-following ability---a model that is poorly calibrated may still
+correctly say ``I am 80\% confident'' if trained to do so. Second, we
+softmax-renormalize over the four answer tokens rather than the full vocabulary,
+which conditions on the assumption that one of the four options is correct and
+yields a proper probability distribution over choices. We pre-fill the assistant
+turn with ``The answer is'' to force scoring at the next-token position,
+following \citet{kadavath2022language}; an alternative would be scoring across
+the full completion, but this is less tractable and model-dependent.
+
 \subsection{Nonparametric Calibration Curves}
 
 For each subject we estimate a reliability curve using isotonic regression
@@ -226,9 +231,10 @@ associated with miscalibration across the full dataset, interpreted as descripti
 associations rather than causal effects. The variance components
 $(\sigma^2_{\mathrm{domain}}, \sigma^2_{\mathrm{subject}}, \sigma^2_\varepsilon)$ answer
 RQ1 via an intraclass correlation (ICC) decomposition: the fraction of total calibration
-heterogeneity attributable to each level of the hierarchy. Subject-level shrunken
-calibration estimates are the fitted random effects $\hat{v}_{jk}$ (BLUPs), which
-implicitly borrow strength across subjects in proportion to sample size.
+heterogeneity attributable to each level of the hierarchy.
+
+\paragraph{Modeling judgment calls.}
+Several design choices warrant explicit justification. \textbf{Fixed vs.\ random effects at each level.} Question-level features are modeled as fixed effects because we seek population-level associations between item characteristics and miscalibration---a single coefficient per feature applying across all questions and subjects. Treating these as random slopes by subject would estimate 57 separate coefficients per feature, which is neither the scientific question nor warranted given average subject sizes of $\sim$246 questions. Subjects are modeled as random effects rather than fixed because we are interested in the variance they explain, not their individual intercepts, and because random effects enable the ICC decomposition central to RQ1. The exchangeability assumption---that subjects are draws from a population of academic knowledge domains---is reasonable given MMLU's design. Domains are also modeled as random effects: with only four groups, fixed effects would estimate specific domain intercepts at the cost of a degree of freedom each, while random effects treat domain as a source of variance to be estimated and tested. \textbf{Three levels vs.\ two.} We include a domain random intercept because MMLU's four-domain hierarchy is the natural grouping structure; in practice domain variance collapses to zero (Table~\ref{tab:icc}), confirming a two-level model suffices, but the three-level specification is the appropriate starting point. \textbf{Signed gap as outcome.} We model the signed calibration gap rather than ECE directly because it supports regression-based inference; ECE is derived separately per subject from isotonic curves.
 
 \subsection{Multiple Testing and Cross-Model Replication}
 
@@ -243,7 +249,14 @@ and bootstrap CIs (2000 replicates, seed 42).
 \section{Results}
 % ============================================================
 
+We organize results around the three research questions: Sections~\ref{sec:icc}--\ref{sec:rankings}
+establish where within MMLU calibration concentrates (RQ1), Section~\ref{sec:crossmodel}
+tests whether these patterns are stable across models (RQ2), and Section~\ref{sec:predictors}
+examines what question-level and scale-related mechanisms produce the heterogeneity (RQ3).
+Section~\ref{sec:sensitivity} reports sensitivity checks on all findings.
+
 \subsection{Variance Decomposition (RQ1)}
+\label{sec:icc}
 
 Table~\ref{tab:icc} reports the ICC decomposition from the three-level mixed
 model for the seven main models. Across all seven, the bulk of calibration-gap
@@ -290,6 +303,7 @@ between-subject variance without a clean domain/subject partition, and treat
 domain as a descriptive grouping rather than a modeled random effect.
 
 \subsection{Calibration Curves by Subject}
+\label{sec:curves}
 
 Figure~\ref{fig:reliability} contrasts reliability curves for the five most
 and five least miscalibrated subjects (by ECE) for GPT-4o-mini. Curves are
@@ -315,6 +329,81 @@ ECE conceals.
   empirical accuracy sized by bin count; dashed line is the calibration diagonal.}
   \label{fig:reliability}
 \end{figure}
+
+\subsection{FDR-Corrected Subject Rankings}
+\label{sec:rankings}
+
+Figure~\ref{fig:meangap} shows all 57 subjects sorted by mean calibration gap
+for each of the seven main models, with FDR-rejected subjects highlighted. At
+$\alpha=0.05$: GPT-4o-mini, Llama, Qwen-3B, Qwen-7B, and Qwen-14B reject all 57
+subjects; Qwen-1.5B (fp16) rejects 56/57 (the lone exception is
+\texttt{jurisprudence}, $\bar{\text{gap}}=0.051$, $p_\text{adj}=0.18$);
+Qwen-0.5B rejects 55/57 (the exceptions are \texttt{high\_school\_statistics}
+and \texttt{formal\_logic}).
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=0.8\textwidth]{figures/subject_mean_gap_7m.pdf}
+  \caption{Mean calibration gap per subject, sorted ascending, for each of the
+  seven main models. Red bars indicate subjects where $H_0$: mean gap $= 0$ is
+  rejected at FDR $\alpha = 0.05$; gray bars are not rejected.}
+  \label{fig:meangap}
+\end{figure}
+
+The substantive finding is the \emph{magnitude} of heterogeneity, not the
+binary reject outcome: per-model gap ranges span 5.4--13.9$\times$ from the
+best- to worst-calibrated subject, and across the six larger models the
+\emph{same} subjects sit at each extreme.
+
+\paragraph{Subjects that are robustly worst-calibrated.} Across the six larger
+models (excluding Qwen-0.5B due to its positional-bias confound), two subjects
+appear in the top-10 most miscalibrated for every model above 1B parameters:
+\texttt{virology} and \texttt{professional\_law}. A consistent cluster of
+college-level technical subjects---\texttt{abstract\_algebra},
+\texttt{college\_mathematics}, and \texttt{machine\_learning}---each appears
+in the top-5 most miscalibrated for four of the six larger models. Together
+these form two recurring patterns: (i) college-level quantitative and technical
+content and (ii) niche professional or factual knowledge
+(\texttt{virology}, \texttt{professional\_law}).
+
+\paragraph{Subjects that are robustly best-calibrated.} Symmetrically,
+\texttt{marketing} and \texttt{high\_school\_psychology} appear in the bottom-10
+best-calibrated for every model above 1B parameters, and
+\texttt{high\_school\_government\_and\_politics} is consistently among the
+best-calibrated across models. Two patterns are visible. First, MMLU's
+high-school-level subjects tend to show smaller calibration gaps than
+their college-level counterparts---the level of specialization required appears
+to track miscalibration. Second, the bottom-10 intersection is dominated by
+Social Sciences and the ``Other'' (applied/factual) MMLU category, with no
+STEM subject appearing.
+
+\subsection{Cross-Model Agreement (RQ2)}
+\label{sec:crossmodel}
+
+Figure~\ref{fig:crossmodel} shows the 7$\times$7 Spearman rank correlation
+matrix for subject-level ECE across all seven main models. Among the six larger
+models, all 15 pairwise correlations fall in $[0.80, 0.94]$. The within-family
+pair Qwen-7B vs Qwen-14B is the highest at 0.94; cross-family GPT-4o-mini vs
+Qwen-7B is 0.92 and GPT-4o-mini vs Qwen-14B is 0.91.
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=0.7\textwidth]{figures/cross_model_heatmap_7m.pdf}
+  \caption{Spearman rank correlation of subject-level ECE across the seven main
+  models (57 common subjects). Among the six larger models, all 15 pairwise
+  correlations fall in $[0.80, 0.94]$. Qwen-0.5B's correlations with the others
+  are $[0.13, 0.20]$, reflecting a qualitatively different miscalibration
+  pattern driven by extreme positional bias.}
+  \label{fig:crossmodel}
+\end{figure}
+
+Qwen-0.5B is the conspicuous exception, with correlations $[0.13, 0.20]$ to
+the other six models (bootstrap 95\% CIs include zero). This is consistent
+with its 10.6$\times$ positional bias: the smallest model's miscalibration is
+dominated by a spurious preference for the D position rather than genuine
+knowledge gaps. We interpret this as evidence that, below approximately 1B
+parameters, positional bias dominates the calibration signal in our
+elicitation protocol.
 
 \subsection{Predictors of Miscalibration (RQ3)}
 \label{sec:predictors}
@@ -400,54 +489,8 @@ We treat the within-family comparison as observational---four checkpoints, one
 family---and read Qwen-0.5B's strongly negative entropy coefficient as an
 artifact of its positional bias rather than a fourth scale point.
 
-\subsection{FDR-Corrected Subject Rankings}
-
-Figure~\ref{fig:meangap} shows all 57 subjects sorted by mean calibration gap
-for each of the seven main models, with FDR-rejected subjects highlighted. At
-$\alpha=0.05$: GPT-4o-mini, Llama, Qwen-3B, Qwen-7B, and Qwen-14B reject all 57
-subjects; Qwen-1.5B (fp16) rejects 56/57 (the lone exception is
-\texttt{jurisprudence}, $\bar{\text{gap}}=0.051$, $p_\text{adj}=0.18$);
-Qwen-0.5B rejects 55/57 (the exceptions are \texttt{high\_school\_statistics}
-and \texttt{formal\_logic}).
-
-\begin{figure}[h]
-  \centering
-  \includegraphics[width=0.8\textwidth]{figures/subject_mean_gap_7m.pdf}
-  \caption{Mean calibration gap per subject, sorted ascending, for each of the
-  seven main models. Red bars indicate subjects where $H_0$: mean gap $= 0$ is
-  rejected at FDR $\alpha = 0.05$; gray bars are not rejected.}
-  \label{fig:meangap}
-\end{figure}
-
-The substantive finding is the \emph{magnitude} of heterogeneity, not the
-binary reject outcome: per-model gap ranges span 5.4--13.9$\times$ from the
-best- to worst-calibrated subject, and across the six larger models the
-\emph{same} subjects sit at each extreme.
-
-\paragraph{Subjects that are robustly worst-calibrated.} Across the six larger
-models (excluding Qwen-0.5B due to its positional-bias confound), two subjects
-appear in the top-10 most miscalibrated for every model in our study:
-\texttt{virology} and \texttt{professional\_law}. A consistent cluster of
-college-level technical subjects---\texttt{abstract\_algebra},
-\texttt{college\_mathematics}, and \texttt{machine\_learning}---each appears
-in the top-5 most miscalibrated for four of the six larger models. Together
-these form two recurring patterns: (i) college-level quantitative and technical
-content and (ii) niche professional or factual knowledge
-(\texttt{virology}, \texttt{professional\_law})---the high-stakes domains where
-systematic overconfidence creates the largest harm potential.
-
-\paragraph{Subjects that are robustly best-calibrated.} Symmetrically,
-\texttt{marketing} and \texttt{high\_school\_psychology} appear in the bottom-10
-best-calibrated for every model in our study, and
-\texttt{high\_school\_government\_and\_politics} is consistently among the
-best-calibrated across models. Two patterns are visible. First, MMLU's
-high-school-level subjects systematically show smaller calibration gaps than
-their college-level counterparts---the level of specialization required appears
-to track miscalibration. Second, the bottom-10 intersection is dominated by
-Social Sciences and the ``Other'' (applied/factual) MMLU category, with no
-STEM subject appearing.
-
 \subsection{Sensitivity Analysis}
+\label{sec:sensitivity}
 
 Sensitivity-analysis conclusions extend uniformly: ECE rankings are stable
 across bin counts (Spearman $\geq 0.97$ vs.\ 20-bin baseline), the
@@ -456,35 +499,7 @@ subjects nearly identically (Spearman $\geq 0.79$), and two-level vs.\
 three-level ICC estimates are numerically identical (consistent with
 $\sigma^2_{\text{domain}}=0$). The FDR rejection is also robust to threshold:
 at $\alpha = 0.01$, the four largest models reject 55--57/57 and the smaller
-Qwens 46--55/57 (the 4-bit 1.5B run is the most sensitive, discussed in the
-precision-effect appendix).
-
-\subsection{Cross-Model Agreement (RQ2)}
-
-Figure~\ref{fig:crossmodel} shows the 7$\times$7 Spearman rank correlation
-matrix for subject-level ECE across all seven main models. Among the six larger
-models, all 15 pairwise correlations fall in $[0.80, 0.94]$. The within-family
-pair Qwen-7B vs Qwen-14B is the highest at 0.94; cross-family GPT-4o-mini vs
-Qwen-7B is 0.92 and GPT-4o-mini vs Qwen-14B is 0.91.
-
-\begin{figure}[h]
-  \centering
-  \includegraphics[width=0.7\textwidth]{figures/cross_model_heatmap_7m.pdf}
-  \caption{Spearman rank correlation of subject-level ECE across the seven main
-  models (57 common subjects). Among the six larger models, all 15 pairwise
-  correlations fall in $[0.80, 0.94]$. Qwen-0.5B's correlations with the others
-  are $[0.13, 0.20]$, reflecting a qualitatively different miscalibration
-  pattern driven by extreme positional bias.}
-  \label{fig:crossmodel}
-\end{figure}
-
-Qwen-0.5B is the conspicuous exception, with correlations $[0.13, 0.20]$ to
-the other six models (bootstrap 95\% CIs include zero). This is consistent
-with its 10.6$\times$ positional bias: the smallest model's miscalibration is
-dominated by a spurious preference for the D position rather than genuine
-knowledge gaps. We interpret this as evidence that, below approximately 1B
-parameters, positional bias dominates the calibration signal in our
-elicitation protocol.
+Qwens 46--55/57 (the 4-bit 1.5B run is the most sensitive to threshold choice).
 
 % ============================================================
 \section{Discussion}
@@ -519,14 +534,21 @@ nakkiran2025trained, yaldiz2026balancing}. We treat this as an observation
 about four checkpoints rather than a controlled mechanism test.
 
 \paragraph{Implications for recalibration.}
-The audit is the diagnostic arm of a broader recalibration picture; the
-operational arm is studied directly by \citet{luo2025pretrained}, who fits
-subject-specific temperature parameters per MMLU subject and shows
-improvements over a global correction. Our contribution is the upstream
-question---whether subject-level scoping is empirically motivated---which the
-cross-model stability above answers affirmatively. The robustly
-worst-calibrated subjects also serve as a transferable diagnostic for
-flagging miscalibration on new models before deployment.
+The audit is the diagnostic arm of a broader recalibration picture. The key
+precondition for subject-aware recalibration is that miscalibration patterns
+be stable enough across models to make subject-level scoping worthwhile: a
+correction informed by one model's subject rankings should generalize to others.
+The cross-model Spearman correlations ($\rho \in [0.80, 0.94]$ across all 15
+pairs of larger models, including cross-family pairs at comparable capability)
+directly answer this precondition affirmatively. A global recalibration applied
+uniformly across subjects would leave the worst-calibrated cluster---\texttt{professional\_law},
+\texttt{virology}, and college-level technical content---systematically
+under-corrected while over-correcting well-calibrated subjects like
+\texttt{marketing} and \texttt{high\_school\_psychology}. The robustly
+worst-calibrated subjects also serve as a transferable starting point for
+pre-deployment review: a deployer can prioritize these subjects when evaluating
+a new model without running the full 57-subject audit, relying on the
+cross-model stability we document here.
 
 \paragraph{Limitations.}
 Domain-level variance is estimated at zero with only four domain groups, so we
@@ -542,8 +564,7 @@ contribute usable signal. 4-bit quantization affects five of the seven models;
 a precision comparison at 1.5B (4-bit vs.\ fp16) showed accuracy 0.536 $\to$
 0.571 and FDR rejection 46/57 $\to$ 55/57 at $\alpha=0.01$, suggesting
 quantization amplifies positional priors and depresses confidence at the
-smallest scales (we use the fp16 1.5B as canonical and treat the rest as a
-precision-effect appendix); we did not run the comparison at larger scales.
+smallest scales (we use the fp16 1.5B as canonical); we did not run the comparison at larger scales.
 
 \paragraph{Future directions.}
 Additional Qwen checkpoints (e.g., 32B) would extend the scale progression
@@ -566,26 +587,24 @@ rather than any particular training pipeline. Within the Qwen family the
 entropy coefficient on the calibration gap grows monotonically with scale,
 qualitatively in line with prior reports of RLHF-induced confidence
 saturation. The audit's stable targets provide empirical motivation for
-subject-aware over global recalibration scoping
-\citep{luo2025pretrained} and supply a transferable diagnostic for flagging
-miscalibration on new models before deployment.
+subject-aware over global recalibration scoping and supply a transferable
+diagnostic for flagging miscalibration on new models before deployment.
 
 % ============================================================
 \section*{Statement of Work}
 % ============================================================
 
-\textbf{Data analysis.} Jennifer Zhang conducted the original two-model
+\textbf{Data analysis.} Jennifer conducted the original two-model
 analysis (GPT-4o-mini, Llama-3-8B-Instruct), including the multilevel model,
-calibration curves, FDR correction, and sensitivity checks. John Wright
-collected and analyzed the four additional Qwen-2.5 model runs (0.5B, 1.5B 4-bit, 1.5B fp16, 3B, 7B, 14B), extended the multilevel and cross-model framework
+calibration curves, FDR correction, and sensitivity checks. John
+collected and analyzed the five additional Qwen-2.5 model runs (0.5B, 1.5B 4-bit, 1.5B fp16, 3B, 7B, 14B), extended the multilevel and cross-model framework
 to seven models, and produced the within-family scale, entropy-mechanism, and
 quantization-effect analyses.
-\textbf{Coding.} Jennifer Zhang built the original pipeline; John Wright
+\textbf{Coding.} Jennifer built the original pipeline; John
 extended it to support arbitrary models and produced the parameterized
 inference notebook used for the open-weight models.
-\textbf{Writing.} Jennifer Zhang drafted the original report; John Wright
-revised it for the seven-model expansion and produced the final manuscript.
-\textbf{Presentation.} Jennifer Zhang prepared the slide deck.
+\textbf{Writing.} Jennifer and John jointly drafted the report with the seven-model expansion.
+\textbf{Presentation.} Jennifer and John jointly prepared the slide deck.
 
 % ============================================================
 \bibliographystyle{plainnat}
