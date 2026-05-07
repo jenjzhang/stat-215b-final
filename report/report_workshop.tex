@@ -55,7 +55,7 @@ niche factual recall domains, and structured legal/professional reasoning.
 We develop a statistical audit framework---a multilevel decomposition of
 question-level calibration gap variance, isotonic reliability curves per subject,
 and Benjamini--Hochberg FDR correction---and apply it
-to MMLU across seven instruction-tuned models from two families spanning six
+to MMLU across seven instruction-tuned models from three families spanning six
 parameter scales: GPT-4o-mini, Llama-3-8B-Instruct, and Qwen-2.5-\{0.5B, 1.5B,
 3B, 7B, 14B\}-Instruct. Three findings emerge. (i)~Among the six models above 1B parameters,
 subject-level ECE rankings are highly correlated across all 15 model pairs
@@ -82,7 +82,7 @@ and the audit itself is a transferable diagnostic for new models.
 
 The standard calibration literature reports aggregate scalars---ECE~\citep{guo2017calibration}, NLL, or
 related---that aggregate over subjects, obscuring where miscalibration concentrates within a benchmark.
-We find that the concentration is structured: across seven instruction-tuned models from two families,
+We find that the concentration is structured: across seven instruction-tuned models from three families,
 the same subjects are consistently worst-calibrated (\texttt{professional\_law}, \texttt{virology},
 college-level quantitative and technical content) and consistently best-calibrated (high-school Social
 Sciences and applied subjects). The subjects at the worst-calibrated end coincide with legal, biomedical,
@@ -444,7 +444,7 @@ metrics like top-line ECE do not reveal this structure.
 The within-family scale comparison rests on four observational checkpoints
 (Qwen 1.5B, 3B, 7B, 14B); additional scale points and base-model checkpoints
 would be needed to make a stronger claim. Cross-family generalization would
-benefit from a third family (e.g.,\ Mistral-7B or Gemma-2-9B) at matched
+benefit from a fourth family (e.g.,\ Mistral-7B or Gemma-2-9B) at matched
 scale. 4-bit quantization affects five of the seven models; we ran a
 precision comparison at 1.5B (4-bit vs.\ fp16) but not at larger scales.
 Qwen-0.5B's extreme positional bias prevents using it as a fifth scaling
