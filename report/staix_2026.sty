@@ -1,0 +1,371 @@
+% STAI-X 2026 style file
+% Inspired by NeurIPS 2026 and ICLR 2026 templates
+% Supports two tracks:
+%   - full   : 8 content pages
+%   - poster : 2 content pages
+%
+% Options:
+%   final      camera-ready version
+%   preprint   non-anonymous preprint version
+%   poster     poster track
+%   full       full paper track (default)
+%   nonatbib   do not load natbib automatically
+%
+% Typical usage:
+%   \usepackage{staix_2026}                % anonymous submission, full track
+%   \usepackage[poster]{staix_2026}        % anonymous submission, poster track
+%   \usepackage[final]{staix_2026}         % camera-ready, full track
+%   \usepackage[poster,final]{staix_2026}  % camera-ready, poster track
+%   \usepackage[preprint]{staix_2026}      % non-anonymous preprint
+%
+% Last revision: March 2026
+
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{staix_2026}[2026-03-20 STAI-X 2026 submission/camera-ready style file]
+
+% -------------------- options --------------------
+\newif\if@staixfinal\@staixfinalfalse
+\DeclareOption{final}{%
+  \@staixfinaltrue
+  \@anonymousfalse
+}
+
+\newif\if@natbib\@natbibtrue
+\DeclareOption{nonatbib}{\@natbibfalse}
+
+\newif\if@preprint\@preprintfalse
+\DeclareOption{preprint}{%
+  \@preprinttrue
+  \@anonymousfalse
+}
+
+\newif\if@anonymous\@anonymoustrue
+
+\newif\if@poster\@posterfalse
+\newif\if@full\@fulltrue
+\DeclareOption{poster}{%
+  \@postertrue
+  \@fullfalse
+}
+\DeclareOption{full}{%
+  \@fulltrue
+  \@posterfalse
+}
+
+\ProcessOptions\relax
+
+% -------------------- conference metadata --------------------
+\newcommand{\@staixyear}{2026}
+\newcommand{\@staixordinal}{1st}
+\newcommand{\@staixfullname}{International Conference on Statistics and Trustworthy AI for Cross (X)-Domain Acceleration (STAI-X \@staixyear)}
+\newcommand{\@staixshortname}{STAI-X \@staixyear}
+\newcommand{\@staixlocation}{Rutgers University}
+
+\if@poster
+  \newcommand{\@trackname}{Poster Track}
+  \newcommand{\@contentpagelimit}{2}
+\else
+  \newcommand{\@trackname}{Full Paper Track}
+  \newcommand{\@contentpagelimit}{8}
+\fi
+
+% -------------------- packages --------------------
+\RequirePackage{ifthen}
+\RequirePackage{environ}
+\RequirePackage{etoolbox}
+
+% acknowledgments environment
+\newcommand{\acksection}{\section*{Acknowledgments}}
+\NewEnviron{ack}{%
+  \acksection
+  \BODY
+}
+
+\if@natbib
+  \RequirePackage{natbib}
+\fi
+
+% fonts
+\renewcommand{\rmdefault}{ptm}
+\renewcommand{\sfdefault}{phv}
+
+% geometry
+\RequirePackage[verbose=true,letterpaper]{geometry}
+\AtBeginDocument{%
+  \newgeometry{
+    textheight=9in,
+    textwidth=5.5in,
+    top=1in,
+    headheight=12pt,
+    headsep=25pt,
+    footskip=30pt
+  }
+  \@ifpackageloaded{fullpage}
+    {\PackageWarning{staix_2026}{fullpage package not allowed! Overwriting formatting.}}
+    {}
+}
+
+\widowpenalty=10000
+\clubpenalty=10000
+\flushbottom
+\sloppy
+
+% -------------------- font sizes --------------------
+\renewcommand{\normalsize}{%
+  \@setfontsize\normalsize\@xpt\@xipt
+  \abovedisplayskip      7\p@ \@plus 2\p@ \@minus 5\p@
+  \abovedisplayshortskip \z@ \@plus 3\p@
+  \belowdisplayskip      \abovedisplayskip
+  \belowdisplayshortskip 4\p@ \@plus 3\p@ \@minus 3\p@
+}
+\normalsize
+\renewcommand{\small}{%
+  \@setfontsize\small\@ixpt\@xpt
+  \abovedisplayskip      6\p@ \@plus 1.5\p@ \@minus 4\p@
+  \abovedisplayshortskip \z@  \@plus 2\p@
+  \belowdisplayskip      \abovedisplayskip
+  \belowdisplayshortskip 3\p@ \@plus 2\p@   \@minus 2\p@
+}
+\renewcommand{\footnotesize}{\fontsize{8pt}{9.5pt}\selectfont}
+\renewcommand{\scriptsize}{\fontsize{7pt}{8pt}\selectfont}
+\renewcommand{\tiny}{\fontsize{6pt}{7pt}\selectfont}
+\renewcommand{\large}{\@setfontsize\large\@xiipt{14}}
+\renewcommand{\Large}{\@setfontsize\Large\@xivpt{16}}
+\renewcommand{\LARGE}{\@setfontsize\LARGE\@xviipt{20}}
+\renewcommand{\huge}{\@setfontsize\huge\@xxpt{23}}
+\renewcommand{\Huge}{\@setfontsize\Huge\@xxvpt{28}}
+
+% -------------------- sections --------------------
+\providecommand{\section}{}
+\renewcommand{\section}{%
+  \@startsection{section}{1}{\z@}%
+                {-2.0ex \@plus -0.5ex \@minus -0.2ex}%
+                { 1.5ex \@plus  0.3ex \@minus  0.2ex}%
+                {\large\bf\raggedright}%
+}
+\providecommand{\subsection}{}
+\renewcommand{\subsection}{%
+  \@startsection{subsection}{2}{\z@}%
+                {-1.8ex \@plus -0.5ex \@minus -0.2ex}%
+                { 0.8ex \@plus  0.2ex}%
+                {\normalsize\bf\raggedright}%
+}
+\providecommand{\subsubsection}{}
+\renewcommand{\subsubsection}{%
+  \@startsection{subsubsection}{3}{\z@}%
+                {-1.5ex \@plus -0.5ex \@minus -0.2ex}%
+                { 0.5ex \@plus  0.2ex}%
+                {\normalsize\bf\raggedright}%
+}
+\providecommand{\paragraph}{}
+\renewcommand{\paragraph}{%
+  \@startsection{paragraph}{4}{\z@}%
+                {1.5ex \@plus 0.5ex \@minus 0.2ex}%
+                {-1em}%
+                {\normalsize\bf}%
+}
+
+% floats
+\renewcommand{\topfraction      }{0.85}
+\renewcommand{\bottomfraction   }{0.4}
+\renewcommand{\textfraction     }{0.1}
+\renewcommand{\floatpagefraction}{0.7}
+
+\newlength{\@staixabovecaptionskip}\setlength{\@staixabovecaptionskip}{7\p@}
+\newlength{\@staixbelowcaptionskip}\setlength{\@staixbelowcaptionskip}{\z@}
+\setlength{\abovecaptionskip}{\@staixabovecaptionskip}
+\setlength{\belowcaptionskip}{\@staixbelowcaptionskip}
+
+\renewenvironment{table}
+  {\setlength{\abovecaptionskip}{\@staixbelowcaptionskip}%
+   \setlength{\belowcaptionskip}{\@staixabovecaptionskip}%
+   \@float{table}}
+  {\end@float}
+
+% footnotes
+\setlength{\footnotesep }{6.65\p@}
+\setlength{\skip\footins}{9\p@ \@plus 4\p@ \@minus 2\p@}
+\renewcommand{\footnoterule}{\kern-3\p@ \hrule width 12pc \kern 2.6\p@}
+\setcounter{footnote}{0}
+
+% paragraphs and lists
+\setlength{\parindent}{\z@}
+\setlength{\parskip  }{5.5\p@}
+\setlength{\topsep       }{4\p@ \@plus 1\p@   \@minus 2\p@}
+\setlength{\partopsep    }{1\p@ \@plus 0.5\p@ \@minus 0.5\p@}
+\setlength{\itemsep      }{2\p@ \@plus 1\p@   \@minus 0.5\p@}
+\setlength{\parsep       }{2\p@ \@plus 1\p@   \@minus 0.5\p@}
+\setlength{\leftmargin   }{3pc}
+\setlength{\leftmargini  }{\leftmargin}
+\setlength{\leftmarginii }{2em}
+\setlength{\leftmarginiii}{1.5em}
+\setlength{\leftmarginiv }{1.0em}
+\setlength{\leftmarginv  }{0.5em}
+\def\@listi  {\leftmargin\leftmargini}
+\def\@listii {\leftmargin\leftmarginii
+              \labelwidth\leftmarginii
+              \advance\labelwidth-\labelsep
+              \topsep  2\p@ \@plus 1\p@    \@minus 0.5\p@
+              \parsep  1\p@ \@plus 0.5\p@ \@minus 0.5\p@
+              \itemsep \parsep}
+
+% -------------------- title block --------------------
+\providecommand{\maketitle}{}
+\renewcommand{\maketitle}{%
+  \par
+  \begingroup
+    \renewcommand{\thefootnote}{\fnsymbol{footnote}}
+    \renewcommand{\@makefnmark}{\hbox to \z@{$^{\@thefnmark}$\hss}}
+    \long\def\@makefntext##1{%
+      \parindent 1em\noindent
+      \hbox to 1.8em{\hss $\m@th ^{\@thefnmark}$}##1
+    }
+    \thispagestyle{empty}
+    \@maketitle
+    \@thanks
+    \@notice
+  \endgroup
+  \let\maketitle\relax
+  \let\thanks\relax
+}
+
+\newcommand{\@toptitlebar}{
+  \hrule height 4\p@
+  \vskip 0.25in
+  \vskip -\parskip%
+}
+\newcommand{\@bottomtitlebar}{
+  \vskip 0.29in
+  \vskip -\parskip
+  \hrule height 1\p@
+  \vskip 0.09in%
+}
+
+\providecommand{\@maketitle}{}
+\renewcommand{\@maketitle}{%
+  \vbox{%
+    \hsize\textwidth
+    \linewidth\hsize
+    \vskip 0.1in
+    \@toptitlebar
+    \centering
+    {\LARGE\bf \@title\par}
+    \@bottomtitlebar
+    \if@anonymous
+      \begin{tabular}[t]{c}\bf\rule{\z@}{24\p@}
+        Anonymous Author(s) \\
+        Anonymous Institution \\
+        Anonymous Address \\
+        \texttt{anonymous@email.com} \\
+      \end{tabular}%
+    \else
+      \def\And{%
+        \end{tabular}\hfil\linebreak[0]\hfil%
+        \begin{tabular}[t]{c}\bf\rule{\z@}{24\p@}\ignorespaces%
+      }
+      \def\AND{%
+        \end{tabular}\hfil\linebreak[4]\hfil%
+        \begin{tabular}[t]{c}\bf\rule{\z@}{24\p@}\ignorespaces%
+      }
+      \begin{tabular}[t]{c}\bf\rule{\z@}{24\p@}\@author\end{tabular}%
+    \fi
+    \vskip 0.3in \@minus 0.1in
+  }
+}
+
+% first-page notice box
+\newcommand{\ftype@noticebox}{8}
+\newcommand{\@notice}{%
+  \enlargethispage{2\baselineskip}%
+  \@float{noticebox}[b]%
+    \footnotesize\@noticestring%
+  \end@float%
+}
+
+% abstract
+\renewenvironment{abstract}%
+{%
+  \vskip 0.075in%
+  \centerline{\large\bf Abstract}%
+  \vspace{0.5ex}%
+  \begin{quote}%
+}
+{%
+  \par%
+  \end{quote}%
+  \vskip 1ex%
+}
+
+% submission metadata helpers
+\newcommand{\staixtrack}{\@trackname}
+\newcommand{\staixpagelimit}{\@contentpagelimit}
+
+\newcommand{\@tracknoticestring}{
+STAI-X \@staixyear\ (\@trackname). Do not distribute.%
+%  \@staixordinal\ International Conference on Statistics and Trustworthy AI for Cross (X)-Domain Acceleration (STAI-X \@staixyear), \@trackname. Do not distribute. 
+}
+
+% page-limit warning utility for authors
+\newcommand{\staixcontentlimitnotice}{%
+  \begin{center}
+  \fbox{\begin{minipage}{0.95\linewidth}
+  \small
+  \textbf{STAI-X \@staixyear\ submission notice.}
+  This manuscript is using the \textbf{\@trackname}. The main content is limited to
+  \textbf{\@contentpagelimit pages}. References do not count toward this limit.
+  Optional appendices and supplementary material may follow the references unless the call for papers specifies otherwise.
+  \end{minipage}}
+  \end{center}
+}
+
+% note at end of document in log
+\AtEndDocument{%
+  \typeout{*** STAI-X 2026 template: track = \@trackname; content-page limit = \@contentpagelimit. ***}%
+}
+
+% submission / final / preprint behavior
+\if@preprint
+  \newcommand{\@noticestring}{%
+    Submitted to \@tracknoticestring%
+  }
+\else
+  \if@staixfinal
+    \newcommand{\@noticestring}{%
+      \@tracknoticestring%
+    }
+  \else
+    \newcommand{\@noticestring}{%
+      Submitted to STAI-X \@staixyear\ (\@trackname). Do not distribute.%
+    }
+    \NewEnviron{hide}{}
+    \let\ack\hide
+    \let\endack\endhide
+
+    \RequirePackage{lineno}
+    \linenumbers
+
+    \AtBeginDocument{%
+      \@ifpackageloaded{amsmath}{%
+        \newcommand*\patchAmsMathEnvironmentForLineno[1]{%
+          \expandafter\let\csname old#1\expandafter\endcsname\csname #1\endcsname
+          \expandafter\let\csname oldend#1\expandafter\endcsname\csname end#1\endcsname
+          \renewenvironment{#1}%
+                          {\linenomath\csname old#1\endcsname}%
+                          {\csname oldend#1\endcsname\endlinenomath}%
+        }%
+        \newcommand*\patchBothAmsMathEnvironmentsForLineno[1]{%
+          \patchAmsMathEnvironmentForLineno{#1}%
+          \patchAmsMathEnvironmentForLineno{#1*}%
+        }%
+        \patchBothAmsMathEnvironmentsForLineno{equation}%
+        \patchBothAmsMathEnvironmentsForLineno{align}%
+        \patchBothAmsMathEnvironmentsForLineno{flalign}%
+        \patchBothAmsMathEnvironmentsForLineno{alignat}%
+        \patchBothAmsMathEnvironmentsForLineno{gather}%
+        \patchBothAmsMathEnvironmentsForLineno{multline}%
+      }{}
+    }
+  \fi
+\fi
+
+\endinput
