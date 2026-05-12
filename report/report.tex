@@ -20,30 +20,20 @@ Large language model (LLM) calibration is nearly always reported as a single
 aggregate scalar, obscuring whether miscalibration is diffuse or concentrated
 in specific knowledge domains. We develop a statistically rigorous audit
 framework and apply it to MMLU \citep{hendrycks2021measuring} using token-level
-log probabilities from seven instruction-tuned models spanning three families
-and six parameter scales: GPT-4o-mini, Llama-3-8B-Instruct, and
-Qwen-2.5-\{0.5B, 1.5B, 3B, 7B, 14B\}-Instruct. Our framework combines a three-level
-mixed-effects model, isotonic and kernel-smoothed reliability curves, and
-Benjamini--Hochberg FDR correction. Across the seven models,
-between-subject calibration variance accounts for 1.7--7.9\% of the total, and
-55--57 of 57 subjects are flagged as significantly miscalibrated at FDR
-$\alpha=0.05$. Subject-level ECE rankings are highly correlated for the six
-larger models (Spearman $\rho \in [0.80, 0.94]$, all 15 pairs); the smallest
-model (Qwen-2.5-0.5B) shows extreme positional bias (predicting D 59\% of the
-time) that produces a qualitatively different miscalibration pattern uncorrelated
-with the others. The same subjects are robustly worst-calibrated across the
-larger models (college-level quantitative STEM, niche factual recall, structured
-ethical/legal reasoning) and the same subjects are robustly best-calibrated
+log probabilities from seven instruction-tuned models spanning three families:
+GPT-4o-mini, Llama-3-8B-Instruct, and Qwen-2.5-\{0.5B, 1.5B, 3B, 7B,
+14B\}-Instruct. Between-subject calibration variance accounts for 1.7--7.9\%
+of the total across models. Subject-level ECE rankings are highly correlated
+for the six larger models (Spearman $\rho \in [0.80, 0.94]$, all 15 pairs);
+Qwen-2.5-0.5B is the exception, showing extreme positional bias that produces
+a qualitatively different pattern. The same subjects are robustly
+worst-calibrated (college-level quantitative STEM, niche factual recall,
+structured legal/professional reasoning) and robustly best-calibrated
 (high-school-level Social Sciences and applied/factual subjects). Within the
-Qwen family across four matched-precision scale points (1.5B/3B/7B/14B),
-the entropy coefficient grows monotonically with scale ($-0.004 \to +0.006
-\to +0.029 \to +0.040$, last two $p<0.001$), and between-subject ICC jumps
-from 1.5B to 3B (0.017 $\to$ 0.051) and is essentially flat thereafter
-(0.049 at 7B, 0.059 at 14B). The mean-overconfidence intercept is non-monotonic,
-peaking at Qwen-3B (0.311) where strong confidence priors have been acquired
-ahead of capability gains, and declining at 7B and 14B as accuracy catches up.
-This is a marginal pattern consistent with prior aggregate findings on
-RLHF-induced confidence saturation \citep{kadavath2022language, nakkiran2025trained}.
+Qwen family, the entropy coefficient grows monotonically with scale
+($-0.004 \to +0.006 \to +0.029 \to +0.040$, last two $p<0.001$), consistent
+with prior reports of RLHF-induced confidence saturation
+\citep{kadavath2022language, nakkiran2025trained}.
 \end{abstract}
 
 % ============================================================
@@ -57,22 +47,7 @@ empirical accuracy: if a model assigns 80\% probability to an answer, it should 
 correct 80\% of the time. Miscalibration, particularly overconfidence, means that users
 who rely on model confidence as a decision signal will be systematically misled.
 
-A substantial literature has studied LLM calibration. \citet{guo2017calibration}
-established the modern empirical study of neural network calibration, popularizing
-expected calibration error (ECE) as a standard metric and demonstrating the
-effectiveness of temperature scaling as a post-hoc correction.
-\citet{kadavath2022language} showed that for multiple-choice tasks, token-level log
-probabilities provide a meaningful calibration signal, and that base (pre-RLHF) models
-exhibit better-calibrated token probabilities than instruction-tuned counterparts.
-\citet{xiong2024can} provided a systematic benchmark of confidence elicitation methods,
-finding that all methods ``struggle in challenging tasks, such as those requiring
-professional knowledge''---suggesting calibration quality may vary by domain, though the
-authors do not investigate this directly. \citet{jiang2021can} similarly found that
-question-level features such as answer entropy predict calibration quality, a pattern we
-examine formally here.
-
-What is missing is a \emph{statistical audit} of that heterogeneity. To our knowledge,
-the existing literature reports subject-level ECE without (i) stabilizing estimates
+A substantial literature has studied LLM calibration at the aggregate level; we survey it in Section~\ref{sec:relwork}. However, to our knowledge, no existing work provides a formal \emph{statistical audit} of that heterogeneity. Specifically, the existing literature reports subject-level ECE without (i) stabilizing estimates
 against large differences in per-subject sample size, (ii) formally testing which
 subjects are robustly miscalibrated after correcting for multiple comparisons, (iii)
 decomposing how much total calibration variance is attributable to domain versus subject
@@ -105,6 +80,7 @@ Our central scientific questions, restated:
 
 % ============================================================
 \section{Related Work}
+\label{sec:relwork}
 % ============================================================
 
 \paragraph{Calibration of neural networks.}
@@ -122,7 +98,7 @@ effect also documented in \citet{ouyang2022training}.
 \citet{xiong2024can} is the closest prior work in spirit, benchmarking confidence
 elicitation across task types. \citet{jiang2021can} showed that question-level features
 predict calibration on QA tasks. \citet{tan2026basecal} uses base model signals for unsupervised recalibration.
-Neither work performs a formal statistical audit of subject-level heterogeneity.
+None of these works performs a formal statistical audit of subject-level heterogeneity.
 
 \paragraph{Multiple testing and multilevel modeling.}
 The Benjamini--Hochberg procedure \citep{bh1995} controls the false discovery rate and
@@ -150,7 +126,7 @@ scales. \textbf{GPT-4o-mini} is queried via the OpenAI Batch API at temperature
 than the API default of 5) ensures all four answer tokens are captured for
 virtually every question. \textbf{Llama-3-8B-Instruct} and \textbf{Qwen-2.5
 \{0.5B, 1.5B, 3B, 7B, 14B\}-Instruct} are run locally on a Colab GPU. The 3B,
-7B, 8B, and 14B models use 4-bit quantization (BitsAndBytes;
+7B, 14B, and Llama (8B) models use 4-bit quantization (BitsAndBytes;
 \citealt{dettmers2023qlora}); the 0.5B model also uses 4-bit, and the 1.5B
 model is run twice (once at 4-bit, once at fp16) so the precision effect can be
 examined directly.\footnote{The fp16 1.5B run was added after we observed that
@@ -474,6 +450,9 @@ and mean accuracy (dashed); the shaded area is the calibration gap.
   \label{fig:entropy}
 \end{figure}
 
+Note that confidence does fall with entropy (the max probability is lower on
+high-entropy items), but accuracy falls faster, so the calibration gap widens
+on the questions the model finds hardest.
 Within the Qwen family the pattern is one of confidence growing faster than
 accuracy as items become harder, rather than accuracy collapsing on hard
 items: at 1.5B confidence and accuracy move roughly together across quartiles
