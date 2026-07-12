@@ -1,0 +1,31 @@
+Outline
+
+Introduction
+(already wrote first draft in my own voice)
+appreciate feedback on what i have. 
+
+Methods
+(already rewrote first draft closer to my own voice)
+
+Results
+Overall this strikes me as too short. It may simultaneously be too wordy, I'm not sure how the conventional style in stats or ML conferences balances thoroughness with ease of presentation in a poster session. It's hard to tell if it's too short, since that will depend on the final formatting of the poster, so probably the best thing is to make a full draft with all results and figures without formatting concerns and then make it easy to comment out undesired sections after formatting. Having several large figures and concise text feels like a good way to go for a poster session though. 
+
+I think I'd like to make the results section more similar to the one in report.tex. Roughly speaking, the way I'd outline the results section is 
+
+- sentence about how the overall pattern is one of over-confidence. I'm not sure if any of the papers cited in report.tex address this, but if they do they should be cited here. 
+- 'where calibration fails' is basically fine, but should be rewritten (maybe by me) to be less Claude-y. Would be good to be able to add figure 1 from report.tex here. 
+- keep the variance decomposition sentence as-is
+- variance decomposition - the table is fine, although graphs or figures are nicer for posters if there's a way of expressing the information in that way. 
+- Benjamini-Hochberg results. this should be accompanied by a clear and explicit statement of the hypotheses being tested, which probably means an equation. 
+- not sure if figure 2 from the paper fits better with the benjamini-hochberg results or overall pattern sentence - the gray bars where the hypothesis was not rejected are too small to notice. 
+- keep correlation matrix figure and corresponding results
+- include figure 4 from report.tex (plot of coefficients) with some text discussion of it i guess. 
+- keep the scaling and entropy part, although maybe don't label it 'within-qwen scaling' because it's mostly about the entropy thing. the paragraph in report.tex is better here, although still is probably too difficult to understand and ai-sounding as written.
+
+Discussion and conclusion sections seem redundant as written, maybe drop conclusion and rename discussion -> conclusion.
+
+Shouldn't we cite everything that we cite in the report in the poster references? Further, does the citation format matter?
+
+General changes to make: take time (again maybe llms can't help with this) to make it sound more human. not sure how to calibrate wordiness. important to double-check that all abbreviations are defined. 
+
+I know we also calculated negative log calibration scores, would be good to find a way to include those and maybe also brier scores. If doing this would take a lot of effort from you, just make a note of it as a todo for later though and report back a feasibility assessment . 

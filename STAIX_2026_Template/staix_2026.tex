@@ -1,0 +1,116 @@
+\documentclass{article}
+
+% If you need to pass options to natbib, use, e.g.:
+%\PassOptionsToPackage{numbers, compress}{natbib}
+% before loading staix_2026.
+
+% ============================================================
+% STAI-X 2026 track options
+% Default: anonymous submission, Full Paper Track
+% ============================================================
+\usepackage{staix_2026}
+% \usepackage[poster]{staix_2026}        % anonymous submission, Poster Track
+% \usepackage[final]{staix_2026}         % camera-ready, Full Paper Track
+% \usepackage[poster,final]{staix_2026}  % camera-ready, Poster Track
+% \usepackage[preprint]{staix_2026}      % non-anonymous preprint
+% \usepackage[poster,preprint]{staix_2026}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage{booktabs}
+\usepackage{amsfonts}
+\usepackage{nicefrac}
+\usepackage{microtype}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{amsmath,amssymb,amsthm}
+
+\title{STAI-X 2026 Submission Title}
+
+\author{%
+  First Author \\
+  Affiliation \\
+  Address \\
+  \texttt{first.author@example.edu}
+  \And
+  Second Author \\
+  Affiliation \\
+  Address \\
+  \texttt{second.author@example.edu}
+}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+This document provides the author shell for STAI-X 2026 submissions. Replace the title, author block, abstract, and main text with your own content. The active track and page-limit policy are controlled by the style-file options.
+\end{abstract}
+
+\staixcontentlimitnotice
+
+\section{Introduction}
+This file is the starting point for authors preparing a submission to \@staixshortname. By default, the template compiles an anonymous submission for the Full Paper Track. To prepare a Poster Track submission, switch to
+\verb|\usepackage[poster]{staix_2026}| in the preamble.
+
+The template follows the overall design philosophy of recent NeurIPS and ICLR templates while adding explicit support for STAI-X 2026's two-track structure:
+\begin{itemize}
+    \item \textbf{Full Paper Track:} Up to 8 pages of main content including figures and tables, excluding references.
+    \item \textbf{Poster Track:} Up to 2 pages of main content including figures and tables, excluding references.
+\end{itemize}
+
+\section{Formatting and style}
+Authors should not modify the margins, font sizes, spacing, or title block defined in the style file. The style file controls anonymity, first-page footer text, and line numbering for the review version.
+
+\subsection{Citations}
+Use standard citation commands from \texttt{natbib}, such as \verb|\citet| and \verb|\citep|. For example, \citet{lamport1994latex} provides a classical reference on \LaTeX{}, while modern machine-learning conferences often use variants of the same submission-style architecture \citep{goodfellow2016deep}.
+
+\subsection{Figures and tables}
+Place figure captions below figures and table captions above tables.
+
+\begin{figure}[h]
+\centering
+\fbox{\rule[-.5cm]{0cm}{4cm} \rule[-.5cm]{4cm}{0cm}}
+\caption{Sample figure caption.}
+\label{fig:sample}
+\end{figure}
+
+\begin{table}[h]
+\caption{Sample table caption.}
+\label{tab:sample}
+\centering
+\begin{tabular}{lc}
+\toprule
+Method & Accuracy \\
+\midrule
+Method A & 0.90 \\
+Method B & 0.93 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Theorem-like environments}
+The template does not force theorem environments, but authors can define them in the usual way.
+
+\newtheorem{theorem}{Theorem}
+\begin{theorem}
+Suppose the style file is used as intended. Then the compiled manuscript conforms to the STAI-X 2026 review format.
+\end{theorem}
+
+\section{Acknowledgments}
+For anonymous submissions, the \texttt{ack} environment is hidden automatically. It reappears in final and preprint modes.
+
+\begin{ack}
+We thank the STAI-X 2026 organizers for creating a venue at the interface of statistics and AI.
+\end{ack}
+
+\bibliographystyle{plainnat}
+\bibliography{staix_2026_sample}
+
+\appendix
+\section{Appendix}
+Additional proofs, implementation details, and supplementary experiments may be placed after the references unless the call for papers specifies otherwise.
+
+\end{document}

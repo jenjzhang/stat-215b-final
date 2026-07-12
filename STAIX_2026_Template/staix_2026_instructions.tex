@@ -1,0 +1,151 @@
+\documentclass{article}
+\usepackage[preprint]{staix_2026}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage{booktabs}
+\usepackage{amsfonts}
+\usepackage{nicefrac}
+\usepackage{microtype}
+\usepackage{xcolor}
+\usepackage{graphicx}
+
+\title{Formatting Instructions for STAI-X 2026 Submissions}
+
+\author{STAI-X 2026 Organizing Committee}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+This document describes the official formatting requirements for submissions to the First International Conference on Statistics and Trustworthy AI for Cross (X)-Domain Acceleration
+ (STAI-X 2026). The conference has two tracks: a Poster Track with a 2-page main-content limit, and a Full Paper Track with an 8-page main-content limit, both including figures and tables. References do not count toward the main-content limit.
+\end{abstract}
+
+\section{Submission of papers to STAI-X 2026}
+STAI-X 2026 accepts electronic submissions through the conference submission system. Authors should prepare their manuscripts using the official \LaTeX{} style files. Please use the current version of the template and do not modify the style file except where explicitly allowed.
+
+\subsection{Tracks}
+STAI-X 2026 has two submission tracks:
+\begin{itemize}
+    \item \textbf{Poster Track.} The main content is limited to \textbf{2 pages} including figures and tables, excluding references.
+    \item \textbf{Full Paper Track.} The main content is limited to \textbf{8 pages} including figures and tables, excluding references.
+\end{itemize}
+Optional appendices may follow the references unless the call for papers states otherwise.
+
+\subsection{Style}
+Papers submitted to STAI-X 2026 must be prepared according to the instructions in this document. The official style file supports anonymous submissions, final camera-ready versions, and non-anonymous preprints.
+
+\subsection{Retrieval of style files}
+The official STAI-X 2026 template package consists of the following files:
+\begin{itemize}
+    \item \verb|staix_2026.sty| --- the conference style file;
+    \item \verb|staix_2026.tex| --- an author shell for submissions;
+    \item \verb|staix_2026_instructions.tex| --- this instruction document.
+\end{itemize}
+
+The style file supports the following options:
+\begin{itemize}
+    \item \verb|poster| --- Poster Track;
+    \item \verb|full| --- Full Paper Track (default);
+    \item \verb|final| --- camera-ready mode;
+    \item \verb|preprint| --- non-anonymous preprint mode;
+    \item \verb|nonatbib| --- disables automatic loading of \verb|natbib|.
+\end{itemize}
+
+Typical usage examples are:
+\begin{verbatim}
+\usepackage{staix_2026}
+\usepackage[poster]{staix_2026}
+\usepackage[final]{staix_2026}
+\usepackage[poster,final]{staix_2026}
+\usepackage[preprint]{staix_2026}
+\end{verbatim}
+
+\section{General formatting instructions}
+\label{gen_inst}
+The text must be confined within a rectangle 5.5 inches wide and 9 inches long. The left margin is 1.5 inches. Use 10-point type with 11-point leading. The title is centered between two horizontal rules. Paragraphs are separated by approximately half a line space, with no indentation.
+
+In anonymous submission mode, author names are suppressed and line numbers are added automatically to aid review. In final and preprint modes, author information is shown and line numbers are removed.
+
+\section{Headings: first level}
+\label{headings}
+All headings should be flush left and bold. First-level headings should be in 12-point type.
+
+\subsection{Headings: second level}
+Second-level headings should be in 10-point type.
+
+\subsubsection{Headings: third level}
+Third-level headings should be in 10-point type.
+
+\section{Citations, figures, tables, references}
+\label{others}
+
+\subsection{Citations within the text}
+Citations should be handled consistently. If \verb|natbib| is used, parenthetical citations can be created with \verb|\citep| and textual citations with \verb|\citet|.
+
+\subsection{Footnotes}
+Footnotes should be used sparingly. Place them at the bottom of the page on which they appear.
+
+\subsection{Figures}
+Figures should be legible and accompanied by captions placed below the figure.
+
+\begin{figure}[h]
+\centering
+\fbox{\rule[-.5cm]{0cm}{4cm} \rule[-.5cm]{4cm}{0cm}}
+\caption{Sample figure caption.}
+\end{figure}
+
+\subsection{Tables}
+Tables should be legible and accompanied by captions placed above the table.
+
+\begin{table}[h]
+\caption{Sample table title}
+\centering
+\begin{tabular}{ll}
+\toprule
+Part & Description \\
+\midrule
+Style file & Controls formatting \\
+Author shell & Starting point for submissions \\
+Instruction file & Explains the rules \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{References}
+References should appear after the main text. References do not count toward the main-content page limit for either track.
+
+\section{Anonymity, preprints, and camera-ready versions}
+At submission time, authors should omit the \verb|final| and \verb|preprint| options. This creates an anonymous submission with line numbers. Accepted papers should use the \verb|final| option for the camera-ready version. Authors who wish to post a non-anonymous preprint may use the \verb|preprint| option.
+
+\section{Track-specific page limits}
+The main-content page limits are:
+\begin{itemize}
+    \item \textbf{Poster Track:} 2 pages, excluding references.
+    \item \textbf{Full Paper Track:} 8 pages, excluding references.
+\end{itemize}
+These limits apply to the main body of the paper, including figures and tables that appear within the main body.
+
+\section{Acknowledgments and appendices}
+Acknowledgments should not appear in the anonymous submission if they reveal author identity. In the supplied style file, the \verb|ack| environment is automatically hidden in anonymous submission mode and shown in final/preprint modes.
+
+Appendices, proofs, and additional details may follow the references unless the call for papers specifies otherwise.
+
+\bibliographystyle{plainnat}
+\begin{thebibliography}{9}
+\bibitem[Goodfellow et~al.(2016)Goodfellow, Bengio, and Courville]{goodfellow2016deep}
+Ian Goodfellow, Yoshua Bengio, and Aaron Courville.
+\newblock \emph{Deep Learning}.
+\newblock MIT Press, 2016.
+
+\bibitem[Lamport(1994)]{lamport1994latex}
+Leslie Lamport.
+\newblock \emph{\LaTeX: A Document Preparation System}.
+\newblock Addison-Wesley, 2nd edition, 1994.
+\end{thebibliography}
+
+\end{document}
