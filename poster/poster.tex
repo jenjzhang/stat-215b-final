@@ -1,7 +1,7 @@
 % Simple 48in x 36in landscape poster template (beamerposter)
 % Compile with: pdflatex poster.tex   (or `make` from this directory)
 \documentclass[final]{beamer}
-\usepackage[size=custom, width=121.92, height=91.44, scale=1.0]{beamerposter} % 48in x 36in in cm
+\usepackage[size=custom, width=121.92, height=91.44, scale=1.05]{beamerposter} % 48in x 36in in cm
 \usepackage[utf8]{inputenc}
 \usepackage{graphicx}
 \usepackage{amsmath,amssymb}
@@ -16,6 +16,7 @@
 \setbeamercolor{block title}{fg=black, bg=white}
 \setbeamercolor{block body}{fg=black, bg=white}
 \setbeamercolor{background canvas}{bg=white}
+\setbeamertemplate{itemize items}[circle]
 
 \title{
 Subject-Level Calibration Heterogeneity is Stable Across LLM Families and Scales: A Statistical Audit of MMLU}
@@ -37,113 +38,65 @@ Subject-Level Calibration Heterogeneity is Stable Across LLM Families and Scales
   % ------------------------- Left column -------------------------
   \begin{column}{0.33\linewidth}
 
-    \begin{block}{Introduction}
+    \begin{block}{Motivation}
       \begin{itemize}
-        \item LLM confidence is of significant interest in addition to accuracy.
-        \item Calibration is usually reported as a scalar (typically Expected
-          Calibration Error, ECE), possibly obscuring underlying structure:
+        \item Calibration is usually reported as one aggregate scalar (ECE),
+          which can hide \emph{where} miscalibration concentrates:
       \end{itemize}
 \[
   \mathrm{ECE} = \sum_b \frac{|B_b|}{n}\,|\mathrm{acc}(B_b) - \mathrm{conf}(B_b)|
 \]
-      \textbf{Questions:}
       \begin{itemize}
-        \item How does calibration vary across QA domains?
-        \item Is this variation consistent across models?
-        \item How is calibration associated with other features (scale,
-          question-level covariates)?
+        \item \textbf{The analogy:} one accuracy number across demographic
+          groups would not pass as a fairness audit --- the same logic
+          applies to calibration.
+        \vspace{0.3em}
+        \item \textbf{Where} is calibration good and bad, and how much?
+        \item \textbf{Is that pattern consistent} across models?
+        \item \textbf{What drives it} (question features, model scale)?
       \end{itemize}
-
-      % LLMs are increasingly deployed in high-stakes settings---healthcare,
-      % law, education---where the reliability of model-expressed confidence
-      % matters as much as accuracy. Yet calibration is nearly always reported
-      % as a single \emph{aggregate scalar}, obscuring whether miscalibration is
-      % diffuse or concentrated in specific knowledge domains.
-
-      % \vspace{0.4em}
-      % We import the logic of a rigorous \emph{fairness audit} into calibration
-      % evaluation and ask three questions:
-      % \begin{itemize}
-      %   \item \textbf{Where} is calibration good and bad? (variance
-      %     decomposition; FDR-corrected subject rankings)
-      %   \item \textbf{How consistent} is the answer across models?
-      %     (cross-model rank correlations)
-      %   \item \textbf{What mechanisms} drive the heterogeneity?
-      %     (question-level predictors; a within-Qwen scaling sweep)
-      % \end{itemize}
-
-      % \vspace{0.4em}
-      % \textbf{Why it matters.} If miscalibration is diffuse, a single global
-      % fix (e.g.\ temperature scaling) suffices. If it is concentrated in
-      % subject clusters that are \emph{stable across models}, subject-aware
-      % recalibration becomes the structurally appropriate scoping choice.
     \end{block}
 
     \begin{block}{Data \& Methods}
-      \textbf{Data.} 
-      Questions: MMLU: 14{,}042 four-option questions across 57 subjects
-      nested in 4 domains (STEM, Social Sciences, Humanities, Other). Subject
-      sizes 100--1{,}534 (median 173).
-
-      Confidence elicitation: renormalized softmax over the four answer tokens:
+      \begin{itemize}
+        \item \textbf{Data:} MMLU --- 14{,}042 four-option questions across
+          57 subjects nested in 4 domains (STEM, Social Sciences,
+          Humanities, Other); subject sizes 100--1{,}534 (median 173).
+        \vspace{0.3em}
+        \item \textbf{Confidence:} renormalized softmax over the four
+          answer tokens:
 \[
   c_i = \max_{a \in \{A,B,C,D\}} \frac{e^{\ell_a}}{\sum_{a'} e^{\ell_{a'}}}
 \]
-
-      \textbf{Models:} GPT-4o-mini,
-      Llama-3-8B-Instruct, and Qwen-2.5-\{0.5B, 1.5B, 3B, 7B, 14B\}-Instruct.
-      The outcome is the signed \emph{calibration gap}
-      $\mathrm{gap}_i = c_i - y_i$, with $y_i \in \{0,1\}$ indicating
-      correctness (positive under overconfidence).
-
-      \textbf{Three-level mixed model} (questions $\to$ subjects $\to$ domains):
-      \[
-        \mathrm{gap}_{ijk} = \mu + \mathbf{x}_{ijk}^\top\boldsymbol{\beta}
-          + u_k + v_{jk} + \varepsilon_{ijk},
-      \]
-      fit using REML.
-
-      \vspace{0.4em}
-      \textbf{Also:} per-subject one-sample $t$-tests with Benjamini--Hochberg FDR control at
-      $\alpha=0.05$; cross-model Spearman correlations of subject-level ECE
-      with bootstrap CIs.
+        \item \textbf{Models:} GPT-4o-mini, Llama-3-8B-Instruct, and
+          Qwen-2.5-\{0.5B, 1.5B, 3B, 7B, 14B\}-Instruct. Outcome is the
+          signed \emph{calibration gap} $\mathrm{gap}_i = c_i - y_i$,
+          $y_i \in \{0,1\}$ (positive under overconfidence).
+        \vspace{0.3em}
+        \item \textbf{Model:} three-level mixed model (questions $\to$
+          subjects $\to$ domains):
+\[
+  \mathrm{gap}_{ijk} = \mu + \mathbf{x}_{ijk}^\top\boldsymbol{\beta}
+    + u_k + v_{jk} + \varepsilon_{ijk},
+\]
+          fit via REML.
+        \item \textbf{Testing:} per-subject one-sample $t$-tests with
+          Benjamini--Hochberg FDR control at $\alpha=0.05$; cross-model
+          Spearman correlations of subject-level ECE with bootstrap CIs.
+      \end{itemize}
     \end{block}
 
-    \begin{block}{Results}
-      \textbf{Every model is overconfident.} The mean calibration gap (mixed-model
-      intercept) is positive for all seven models, ranging $0.18$--$0.31$. This is consistent with prior work
-      (Guo et al.\ 2017; Kadavath et al.\ 2022). 
+    \begin{block}{Structure Exists, But Is Modest}
+      \begin{itemize}
+        \item Most calibration-gap variance is at the question level
+          (92.0--98.5\%); domain variance collapses to zero.
+        \item Between-subject ICC spans nearly $5\times$ across models ---
+          small in absolute terms\ldots
+        \item \ldots but (next panel) large enough to organize a
+          $3.8$--$13.0\times$ range in subject-level miscalibration.
+      \end{itemize}
 
       \vspace{0.5em}
-      \textbf{Calibration across subjects}
-      Across the six larger models, \texttt{virology} and
-      \texttt{professional\_law} appear in the top-10 most miscalibrated for
-      every model; a cluster of college-level technical subjects
-      (\texttt{abstract\_algebra}, \texttt{college\_mathematics},
-      \texttt{machine\_learning}) is in the top-5 for four of six.
-      Symmetrically, \texttt{marketing} and \texttt{high\_school\_psychology}
-      are best-calibrated for every model. Specialization level tracks
-      miscalibration: high-school subjects show systematically smaller gaps
-      than their college-level counterparts.
-
-      % ---- Reliability curves (report Fig. 1). Comment out the bottom panel to save space. ----
-      \begin{center}
-        \includegraphics[width=0.85\linewidth]{top5_most_miscalibrated_gpt4o_7m.pdf}\\[0.3em]
-        \includegraphics[width=0.85\linewidth]{bottom5_best_calibrated_gpt4o_7m.pdf}
-      \end{center}
-      {\small GPT-4o-mini reliability curves: the five most miscalibrated (top)
-      and five best-calibrated (bottom) subjects. Solid: isotonic fit on
-      observed support; markers: 20-bin empirical accuracy sized by count;
-      dashed: perfect calibration.}
-    \end{block}
-
-
-        \begin{block}{Variance decomposition}
-      Most calibration-gap variance is at the question level (92.0--98.5\%) and
-      domain variance collapses to zero; between-subject ICC spans nearly
-      $5\times$ across models.
-
-      \vspace{0.3em}
       \begin{center}
       \small
       \begin{tabular}{lrr}
@@ -160,15 +113,47 @@ Subject-Level Calibration Heterogeneity is Stable Across LLM Families and Scales
         \bottomrule
       \end{tabular}
       \end{center}
-      {\small ICC$_{\text{subject}}$: share of total calibration-gap variance at
-      the subject level. Domain variance is estimated at zero for all models.}
+      {\small ICC$_{\text{subject}}$: share of total calibration-gap variance
+      at the subject level. Domain variance is estimated at zero for all
+      models.}
     \end{block}
+
+    \begin{block}{Where Calibration Fails}
+      \begin{itemize}
+        \item \textbf{Every model is overconfident on average:} intercept
+          positive for all seven models, $0.18$--$0.31$ (Guo et al.\ 2017;
+          Kadavath et al.\ 2022).
+        \vspace{0.3em}
+        \item \textbf{But the failure is not uniform.} \texttt{virology} and
+          \texttt{professional\_law}: top-10 worst-calibrated for every
+          model above 1B parameters.
+        \item College-level technical cluster (\texttt{abstract\_algebra},
+          \texttt{college\_mathematics}, \texttt{machine\_learning}): top-5
+          for four of six.
+        \item \texttt{marketing} and \texttt{high\_school\_psychology}:
+          best-calibrated for every model.
+        \item Specialization level tracks miscalibration: high-school
+          subjects show systematically smaller gaps than their
+          college-level counterparts.
+      \end{itemize}
+
+      \vspace{0.4em}
+      \begin{center}
+        \includegraphics[width=0.76\linewidth]{top5_most_miscalibrated_gpt4o_7m.pdf}\\[0.3em]
+        \includegraphics[width=0.76\linewidth]{bottom5_best_calibrated_gpt4o_7m.pdf}
+      \end{center}
+      {\small GPT-4o-mini reliability curves: the five most miscalibrated (top)
+      and five best-calibrated (bottom) subjects. Solid: isotonic fit on
+      observed support; markers: 20-bin empirical accuracy sized by count;
+      dashed: perfect calibration.}
+    \end{block}
+
   \end{column}
 
   % ------------------------ Middle column -------------------------
   \begin{column}{0.34\linewidth}
 
-    \begin{block}{FDR-controlled miscalibration testing}
+    \begin{block}{Magnitude, Not the Binary Count}
       For each of the 57 subjects $s$ we test whether its mean calibration gap
       is zero,
       \[
@@ -176,47 +161,61 @@ Subject-Level Calibration Heterogeneity is Stable Across LLM Families and Scales
         \quad\text{vs.}\quad
         H_1:\ \mathbb{E}\!\left[\mathrm{gap}_i \mid \text{subject } s\right] \neq 0,
       \]
-      with a two-sided one-sample $t$-test, controlling the false discovery
-      rate (FDR) at $\alpha=0.05$ via Benjamini--Hochberg (1995). Rejections are
-      near-universal (the five largest models reject all 57 subjects), so the
-      story is the \emph{magnitude} of the gaps, not the binary outcome:
-      best- to worst-calibrated gap ranges span $3.8$--$13.0\times$ across the
-      six larger models.
+      via a two-sided one-sample $t$-test, controlling FDR at $\alpha=0.05$
+      via Benjamini--Hochberg (1995).
+      \begin{itemize}
+        \item Rejections are near-universal (the five largest models reject
+          all 57 subjects) --- with this much data and a large global
+          overconfidence effect, that's expected, \emph{not informative}.
+        \vspace{0.3em}
+        \item The real finding is the \emph{magnitude}: best- to
+          worst-calibrated gap ranges span $3.8$--$13.0\times$ across the
+          six larger models.
+        \item The \emph{same} subjects sit at each extreme, every time.
+        \vspace{0.3em}
+        \item \textbf{Robustness:} ECE rankings are stable across bin counts
+          (Spearman $\geq 0.97$ vs.\ the 20-bin baseline) and agree with a
+          strictly proper scoring rule, the Negative Log Calibration Score
+          (Spearman $\geq 0.79$); 2- and 3-level ICC estimates match.
+      \end{itemize}
     \end{block}
 
-    \begin{block}{Robustness Checks}
-      ECE rankings are stable across bin counts (Spearman $\geq 0.97$ vs.\ the
-      20-bin baseline) and agree with a strictly proper scoring rule, the
-      Negative Log Calibration Score (Spearman $\geq 0.79$); two- and
-      three-level ICC estimates are numerically identical.
-      % (John): one of the reviewers asked about Brier score, we could maybe include this here. However, mentioning NLCS addresses this concern pretty well already. 
-    \end{block}
+    \begin{block}{Stable Across Models and Families}
+      \begin{itemize}
+        \item All 15 pairwise Spearman correlations among the six larger
+          models fall in $[0.80, 0.94]$.
+        \item Cross-family GPT-4o-mini vs.\ Qwen-7B/14B ($0.92/0.91$) is as
+          strong as the best within-family pair (Qwen-7B vs.\ 14B, $0.94$).
+        \vspace{0.3em}
+        \item The same subjects are hard \emph{regardless of architecture or
+          scale}.
+        \vspace{0.3em}
+        \item Qwen-0.5B is a conspicuous exception ($\rho \in [0.13, 0.20]$),
+          driven by $10.6\times$ positional bias toward D --- a floor below
+          which our elicitation protocol breaks down.
+      \end{itemize}
 
-    \begin{block}{Cross-model \& cross-family stability}
-      All 15 pairwise Spearman correlations among the six larger models fall in
-      $[0.80, 0.94]$. Cross-family GPT-4o-mini vs.\ Qwen-7B/14B ($0.92/0.91$) is
-      as strong as the best within-family pair (Qwen-7B vs.\ 14B, $0.94$).
-      Qwen-0.5B is a conspicuous exception ($\rho \in [0.13, 0.20]$), driven by
-      $10.6\times$ positional bias toward D---a floor below which our
-      elicitation protocol breaks down.
-
+      \vspace{0.4em}
       \begin{center}
-        \includegraphics[width=0.72\linewidth]{cross_model_heatmap_7m.pdf}
+        \includegraphics[width=0.60\linewidth]{cross_model_heatmap_7m.pdf}
       \end{center}
       {\small Spearman rank correlation of subject-level ECE across the seven
       models (57 common subjects).}
     \end{block}
 
+    \begin{block}{What Predicts the Gap}
+      \begin{itemize}
+        \item Word count positively predicts overconfidence for
+          GPT-4o-mini and the larger Qwens.
+        \item Negation and option length: mostly inert.
+        \vspace{0.3em}
+        \item Most informative pattern: the \textbf{entropy} coefficient
+          (next panel).
+      \end{itemize}
 
-    \begin{block}{Question-level predictors}
-      The three-level mixed model relates the calibration gap to standardized
-      question features. Word count positively predicts overconfidence for
-      GPT-4o-mini and the larger Qwens; negation and option length are mostly
-      inert. The most informative pattern is the \textbf{entropy} coefficient
-      (next panel).
-
+      \vspace{0.4em}
       \begin{center}
-        \includegraphics[width=0.95\linewidth]{coef_plot_7m.pdf}
+        \includegraphics[width=0.70\linewidth]{coef_plot_7m.pdf}
       \end{center}
       {\small Fixed-effect estimates ($\pm$95\% CI) on the standardized
       calibration-gap scale. The entropy coefficient shows a clear sign
@@ -228,59 +227,82 @@ Subject-Level Calibration Heterogeneity is Stable Across LLM Families and Scales
   % ------------------------- Right column -------------------------
   \begin{column}{0.33\linewidth}
 
-    \begin{block}{Difficulty, entropy, and scale}
-      Entropy $H_i$ of the A/B/C/D distribution proxies how hard the model finds
-      an item. Naively, higher entropy should shrink the gap (top-1 confidence is
-      mechanically lower). Instead, within the matched-precision Qwen sweep
-      (1.5B fp16, 3B, 7B, 14B) the entropy coefficient grows monotonically:
-      \[
-        -0.004 \to +0.006 \to +0.029 \to +0.040.
-      \]
-      At 7B/14B, confidence stays near saturation across
-      the first three entropy quartiles while accuracy keeps dropping, so the
-      gap widens on the model's hardest items (Q1 vs.\ Q4 gap: $+0.05$ vs.\
-      $+0.37$ at 7B; $+0.03$ vs.\ $+0.46$ at 14B). The between-subject ICC also
-      jumps from 1.5B to 3B ($0.017 \to 0.051$) and is flat thereafter---
-      consistent with RLHF-induced confidence saturation (Kadavath et al.\ 2022;
-      Nakkiran et al.\ 2025).
+    \begin{block}{The Gap Grows With Scale}
+      \begin{itemize}
+        \item Entropy $H_i$ of the A/B/C/D distribution proxies item
+          difficulty. Naively, higher entropy should \emph{shrink} the gap
+          (top-1 confidence is mechanically lower).
+        \vspace{0.3em}
+        \item Instead, within the matched-precision Qwen sweep (1.5B fp16,
+          3B, 7B, 14B), the entropy coefficient grows monotonically:
+\[
+  -0.004 \to +0.006 \to +0.029 \to +0.040.
+\]
+        \item At 7B/14B, confidence stays near saturation across the first
+          three entropy quartiles while accuracy keeps dropping, so the
+          gap widens on the model's hardest items (Q1 vs.\ Q4 gap: $+0.05$
+          vs.\ $+0.37$ at 7B; $+0.03$ vs.\ $+0.46$ at 14B).
+        \vspace{0.3em}
+        \item Between-subject ICC also jumps from 1.5B to 3B
+          ($0.017 \to 0.051$) and is flat thereafter --- consistent with
+          RLHF-induced confidence saturation (Kadavath et al.\ 2022;
+          Nakkiran et al.\ 2025).
+      \end{itemize}
 
+      \vspace{0.4em}
       \begin{center}
-        \includegraphics[width=0.92\linewidth]{entropy_mechanism_7m.pdf}
+        \includegraphics[width=0.90\linewidth]{entropy_mechanism_7m.pdf}
       \end{center}
       {\small Confidence (solid) and accuracy (dashed) by entropy quartile;
       shaded area is the calibration gap.}
     \end{block}
 
-    \begin{block}{Conclusion}
-      Subject-level miscalibration is primarily a property of the {task},
-      not of any single training pipeline: it is large and stable across LLM
-      families above ${\sim}1$B parameters (all 15 larger-model pairs
-      $\rho \in [0.80, 0.94]$). Applied/factual high-school subjects are reliably
-      well-calibrated; college-level quantitative and niche professional content
-      are reliably bad. This cross-model stability is the precondition that makes
-      {subject-aware} recalibration potentially worthwhile a global fix would
-      under-correct the worst cluster (\texttt{professional\_law},
-      \texttt{virology}, college-level technical content) while over-correcting
-      subjects like \texttt{marketing}. 
+    \begin{alertblock}{Why Subject-Level, Not Model-Level}
+      \begin{itemize}
+        \item A single global fix (e.g.\ temperature scaling) cannot work
+          here: one scalar $T$ tuned for the worst subjects
+          (\texttt{professional\_law}, \texttt{virology}, gap up to
+          $0.487$) would badly overcorrect well-calibrated subjects like
+          \texttt{marketing} (gap $0.037$) --- the $13\times$ spread is too
+          wide for any single correction.
+        \vspace{0.3em}
+        \item Because the same subjects are hard \emph{across every model
+          family and scale we tested}, this is a property of the
+          \emph{task}, not a training-pipeline quirk --- so the fix has to
+          live at the subject level too.
+        \vspace{0.3em}
+        \item \textbf{Practical upshot:} the recurring worst-calibrated
+          subjects double as a portable pre-deployment checklist --- flag
+          likely miscalibration on a \emph{new} model without re-running the
+          full 57-subject audit.
+      \end{itemize}
+    \end{alertblock}
+
+    \begin{block}{Takeaways}
+      \begin{itemize}
+        \item \textbf{The unit of analysis is the subject, not the model.}
+          Aggregate ECE hides a $3.8$--$13.0\times$ range in miscalibration
+          magnitude that a single scalar cannot see.
+        \vspace{0.3em}
+        \item \textbf{Miscalibration is task-driven.} Subject rankings are
+          stable across three families and six scales
+          ($\rho \in [0.80,0.94]$) --- model-level retraining is unlikely to
+          resolve it.
+        \vspace{0.3em}
+        \item \textbf{Open question:} \emph{why} these subjects are hardest
+          (abstractness, training-data rarity, or something else) remains
+          unresolved.
+      \end{itemize}
     \end{block}
 
     \begin{block}{References}
       {\footnotesize
-      Barocas, Hardt \& Narayanan (2023). \emph{Fairness and Machine Learning}. MIT Press.\;
       Benjamini \& Hochberg (1995). Controlling the false discovery rate. \emph{JRSS-B} 57(1).\;
-      Dettmers et al.\ (2023). QLoRA. \emph{NeurIPS}.\;
-      Efron (2012). \emph{Large-Scale Inference}. Cambridge Univ.\ Press.\;
       Guo et al.\ (2017). On calibration of modern neural networks. \emph{ICML}.\;
       Hendrycks et al.\ (2021). Measuring massive multitask language understanding. \emph{ICLR}.\;
-      Jiang et al.\ (2021). How can we know when language models know? \emph{TACL} 9.\;
       Kadavath et al.\ (2022). Language models (mostly) know what they know. arXiv:2207.05221.\;
       Nakkiran et al.\ (2025). Trained on tokens, calibrated on concepts. arXiv:2511.04869.\;
-      Ouyang et al.\ (2022). Training language models to follow instructions with human feedback. \emph{NeurIPS}.\;
-      Raudenbush \& Bryk (2002). \emph{Hierarchical Linear Models}, 2nd ed. Sage.\;
-      Tan et al.\ (2026). BaseCal: unsupervised confidence calibration via base model signals. arXiv:2601.03042.\;
-      Xiong et al.\ (2024). Can LLMs express their uncertainty? \emph{ICLR}.\;
-      Yaldiz et al.\ (2026). Balancing classification and calibration in decision-making LLMs. arXiv:2601.13284.\;
-      Zadrozny \& Elkan (2002). Transforming classifier scores into accurate multiclass probability estimates. \emph{KDD}.
+      Xiong et al.\ (2024). Can LLMs express their uncertainty? \emph{ICLR}.
     }
     \end{block}
   \end{column}
