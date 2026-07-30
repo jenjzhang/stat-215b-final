@@ -234,7 +234,6 @@ def figure_coef_plot():
     coef = {
         "Intercept": {
             "gpt4o": (0.196, 0.016), "llama": (0.197, 0.010),
-            "qwen_0_5b": (0.209, 0.010),
             "qwen_1_5b_fp16": (0.179, 0.009),
             "qwen_3b": (0.311, 0.015),
             "qwen_7b": (0.233, 0.014),
@@ -242,7 +241,6 @@ def figure_coef_plot():
         },
         "Word count": {
             "gpt4o": (0.031, 0.006), "llama": (-0.005, 0.006),
-            "qwen_0_5b": (-0.013, 0.007),
             "qwen_1_5b_fp16": (0.003, 0.006),
             "qwen_3b": (0.010, 0.007),
             "qwen_7b": (0.019, 0.006),
@@ -250,7 +248,6 @@ def figure_coef_plot():
         },
         "Max option length": {
             "gpt4o": (0.001, 0.004), "llama": (-0.001, 0.005),
-            "qwen_0_5b": (-0.028, 0.005),
             "qwen_1_5b_fp16": (0.005, 0.005),
             "qwen_3b": (-0.008, 0.005),
             "qwen_7b": (-0.007, 0.005),
@@ -258,7 +255,6 @@ def figure_coef_plot():
         },
         "Negation": {
             "gpt4o": (-0.001, 0.010), "llama": (0.007, 0.011),
-            "qwen_0_5b": (0.016, 0.012),
             "qwen_1_5b_fp16": (-0.010, 0.011),
             "qwen_3b": (-0.014, 0.011),
             "qwen_7b": (-0.001, 0.011),
@@ -266,7 +262,6 @@ def figure_coef_plot():
         },
         "Entropy": {
             "gpt4o": (0.016, 0.004), "llama": (0.008, 0.004),
-            "qwen_0_5b": (-0.063, 0.004),
             "qwen_1_5b_fp16": (-0.004, 0.004),
             "qwen_3b": (0.006, 0.004),
             "qwen_7b": (0.029, 0.004),
@@ -275,23 +270,25 @@ def figure_coef_plot():
     }
     predictors = list(coef.keys())
     n_pred = len(predictors)
-    offsets = np.linspace(-0.35, 0.35, len(MAIN_MODELS))
+    offsets = np.linspace(-0.3, 0.3, len(SIX_MAIN_MODELS))
 
-    fig, ax = plt.subplots(figsize=(8.5, 5.0))
-    for i, m in enumerate(MAIN_MODELS):
+    fig, ax = plt.subplots(figsize=(8.0, 4.6))
+    for i, m in enumerate(SIX_MAIN_MODELS):
         xs = [coef[p][m][0] for p in predictors]
         ses = [coef[p][m][1] for p in predictors]
         ys = np.arange(n_pred) + offsets[i]
         ax.errorbar(xs, ys, xerr=[1.96 * s for s in ses], fmt="o",
-                    color=COLORS[m], ms=5, capsize=2.5, label=SHORT[m])
+                    color=COLORS[m], ms=7, capsize=3.5, elinewidth=1.6,
+                    label=SHORT[m])
 
     ax.axvline(0, color="gray", lw=0.8, ls="--", alpha=0.7)
     ax.set_yticks(np.arange(n_pred))
-    ax.set_yticklabels(predictors)
+    ax.set_yticklabels(predictors, fontsize=15)
+    ax.tick_params(axis="x", labelsize=13)
     ax.invert_yaxis()
-    ax.set_xlabel(r"$\hat{\beta}$ (with 95% CI; covariates standardized)")
-    ax.set_title("Fixed effects from the multilevel model — six models", fontsize=10)
-    ax.legend(loc="lower right", fontsize=8, ncol=2)
+    ax.set_xlabel(r"$\hat{\beta}$ (with 95% CI; covariates standardized)", fontsize=14)
+    ax.set_title("Fixed effects from the multilevel model — six models", fontsize=16)
+    ax.legend(loc="lower right", fontsize=13, ncol=2)
     ax.grid(axis="x", alpha=0.3)
     fig.tight_layout()
     out = FIG / "coef_plot_7m.pdf"
@@ -408,6 +405,44 @@ def figure_qwen_scaling():
 
 
 figure_qwen_scaling()
+
+
+# ============================================================
+# Figure: standalone entropy-coefficient-vs-scale panel (poster use)
+# ============================================================
+def figure_entropy_scale_coef():
+    scale_data = pd.DataFrame({
+        "model":      ["Qwen-1.5B", "Qwen-3B", "Qwen-7B", "Qwen-14B"],
+        "params_b":   [1.5, 3.0, 7.0, 14.0],
+        "entropy":    [-0.004, 0.006, 0.029, 0.040],
+        "entropy_se": [0.004, 0.004, 0.004, 0.003],
+    })
+
+    fig, ax = plt.subplots(figsize=(4.6, 3.0))
+    ax.errorbar(scale_data["params_b"], scale_data["entropy"],
+                yerr=1.96 * scale_data["entropy_se"], fmt="o-", color="#9467bd",
+                ms=9, capsize=4, lw=2)
+    ax.axhline(0, color="gray", ls="--", lw=0.8, alpha=0.7)
+    for _, row in scale_data.iterrows():
+        ax.annotate(f"  {row['entropy']:+.3f}", (row["params_b"], row["entropy"]),
+                    fontsize=11, va="center")
+    ax.set_xscale("log")
+    ax.minorticks_off()
+    ax.set_xlabel("Qwen parameters (B, log scale)", fontsize=13)
+    ax.set_ylabel(r"Entropy coefficient $\hat\beta_\text{ent}$", fontsize=13)
+    ax.tick_params(labelsize=12)
+    ax.set_xticks([1.5, 3, 7, 14])
+    ax.set_xticklabels(["1.5", "3", "7", "14"])
+    ax.set_xlim(1.2, 17)
+    ax.grid(alpha=0.3)
+    fig.tight_layout()
+    out = FIG / "entropy_scale_coef.pdf"
+    fig.savefig(out, bbox_inches="tight")
+    plt.close(fig)
+    print(f"Saved {out}")
+
+
+figure_entropy_scale_coef()
 
 
 print("\nAll figures saved with `_6m` suffix to report/figures/")
